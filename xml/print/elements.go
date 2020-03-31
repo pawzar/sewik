@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"strings"
 
-	"sewik/xml/structure"
+	"sewik/xml/spec"
 )
 
-func Elements(elems structure.Elements, l, c int) {
-	for k, elem := range elems.Int() {
+func Elements(elems spec.Elements, l, c int) {
+	for k, elem := range elems.Get() {
 		fmt.Printf("\n%s<%s", strings.Repeat("  ", l), k)
 
 		fmt.Printf(` _count="%d"`, elem.Cn)

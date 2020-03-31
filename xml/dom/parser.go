@@ -1,27 +1,15 @@
-package parse
+package dom
 
 import (
 	"bytes"
 	"encoding/xml"
 	"fmt"
 	"io"
-	"os"
 
-	"github.com/subchen/go-xmldom"
 	"golang.org/x/net/html/charset"
 )
 
-func File(filename string) (*xmldom.Document, error) {
-	file, err := os.Open(filename)
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
-
-	return parse(file)
-}
-
-func parse(r io.Reader) (*xmldom.Document, error) {
+func Parse(r io.Reader) (*Document, error) {
 	p := xml.NewDecoder(r)
 	p.CharsetReader = charset.NewReaderLabel
 
@@ -30,18 +18,18 @@ func parse(r io.Reader) (*xmldom.Document, error) {
 		return nil, err
 	}
 
-	doc := new(xmldom.Document)
-	var e *xmldom.Node
+	doc := &Document{}
+	var e *Element
 	for t != nil {
 		switch token := t.(type) {
 		case xml.StartElement:
 			// a new node
-			el := new(xmldom.Node)
+			el := &Element{}
 			el.Document = doc
 			el.Parent = e
 			el.Name = token.Name.Local
 			for _, attr := range token.Attr {
-				el.Attributes = append(el.Attributes, &xmldom.Attribute{
+				el.Attributes = append(el.Attributes, &Attribute{
 					Name:  attr.Name.Local,
 					Value: attr.Value,
 				})

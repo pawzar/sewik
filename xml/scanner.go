@@ -3,20 +3,19 @@ package xml
 import (
 	"fmt"
 	"log"
+	"os"
 	"path/filepath"
 	"sync"
 
-	"github.com/subchen/go-xmldom"
-
 	"sewik/sys"
-	"sewik/xml/parse"
+	"sewik/xml/dom"
 	"sewik/xml/print"
-	"sewik/xml/structure"
+	"sewik/xml/spec"
 )
 
-func ScanXMLsInPaths(p []string, workerPoolSize int) {
+func ScanInPaths(p []string, workerPoolSize int) {
 	filenames := make(chan string)
-	nodes := make(chan *xmldom.Node)
+	nodes := make(chan *dom.Element)
 
 	var wg sync.WaitGroup
 	go func() {
@@ -30,9 +29,9 @@ func ScanXMLsInPaths(p []string, workerPoolSize int) {
 		go worker(&wg, w, filenames, nodes)
 	}
 
-	go populateFilenames(filenames, p)
+	go populateJobs(filenames, p)
 
-	elems := structure.NewElementsWithLock()
+	elems := spec.NewElementsWithLock()
 	for node := range nodes {
 		elems.Add(node)
 	}
@@ -42,7 +41,7 @@ func ScanXMLsInPaths(p []string, workerPoolSize int) {
 	fmt.Println()
 }
 
-func populateFilenames(filenames chan<- string, patterns []string) {
+func populateJobs(filenames chan<- string, patterns []string) {
 	defer close(filenames)
 
 	for k, pattern := range patterns {
@@ -58,30 +57,41 @@ func populateFilenames(filenames chan<- string, patterns []string) {
 	log.Println("[IN] DONE")
 }
 
-func worker(wg *sync.WaitGroup, n int, jobs <-chan string, results chan<- *xmldom.Node) {
+func worker(wg *sync.WaitGroup, n int, jobs <-chan string, results chan<- *dom.Element) {
 	defer wg.Done()
 
 	log.Printf("[WORKER] %d START", n)
 
 	for filename := range jobs {
-		log.Printf("[WORKER] %d [BEGINS] %q\n%s", n, filename, sys.PrintMemStats())
+		log.Printf("[WORKER] %d [BEGINS] %q\n%s", n, filename, sys.MemStats())
 
-		scanFile(results, filename)
+		scan(filename, results)
 
-		log.Printf("[WORKER] %d [FINISHED] %q\n%s", n, filename, sys.PrintMemStats())
+		log.Printf("[WORKER] %d [FINISHED] %q\n%s", n, filename, sys.MemStats())
 	}
 
 	log.Printf("[WORKER] %d STOP", n)
 }
 
-func scanFile(nodes chan<- *xmldom.Node, filename string) {
+func scan(filename string, results chan<- *dom.Element) {
 	fmt.Printf("<!-- %s -->\n", filename)
-	doc, err := parse.File(filename)
+
+	doc, err := parse(filename)
 	if err != nil {
 		log.Println(filename + ": " + err.Error())
 
 		return
 	}
 
-	nodes <- doc.Root
+	results <- doc.Root
+}
+
+func parse(filename string) (*dom.Document, error) {
+	file, err := os.Open(filename)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	return dom.Parse(file)
 }

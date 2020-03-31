@@ -47,7 +47,7 @@ func main() {
 	}
 
 	workerNum := *pool
-	xml.ScanXMLsInPaths(flag.Args(), workerNum)
+	xml.ScanInPaths(flag.Args(), workerNum)
 
 	if *memFile != "" {
 		f, err := os.Create(*memFile)
@@ -61,8 +61,5 @@ func main() {
 		}
 	}
 
-	stats := sys.FormattedStats(start, workerNum, newProcCount, defaultProcCount)
-
-	fmt.Printf("\n<!--\n%s-->\n", stats)
-	log.Print(stats)
+	log.Print(sys.Stats(start, workerNum, newProcCount, defaultProcCount))
 }

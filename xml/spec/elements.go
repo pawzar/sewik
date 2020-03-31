@@ -1,15 +1,21 @@
-package structure
+package spec
 
 import (
 	"sync"
 
-	"github.com/subchen/go-xmldom"
+	"sewik/xml/dom"
 )
 
 type Elements interface {
-	Add(n *xmldom.Node)
-	Int() elementMap
+	Add(n *dom.Element)
+	Get() elementMap
 	Len() int
+}
+
+type Element struct {
+	Cn int
+	At Attributes
+	El Elements
 }
 
 func NewElementsWithLock() Elements {
@@ -23,15 +29,9 @@ type elementsWithLock struct {
 	in elementMap
 }
 
-type Element struct {
-	Cn int
-	At Attributes
-	El Elements
-}
-
 type elementMap map[string]Element
 
-func (e *elementsWithLock) Add(n *xmldom.Node) {
+func (e *elementsWithLock) Add(n *dom.Element) {
 	e.mx.Lock()
 	defer e.mx.Unlock()
 
@@ -57,7 +57,7 @@ func (e *elementsWithLock) Add(n *xmldom.Node) {
 	e.in[n.Name] = x
 }
 
-func (e elementsWithLock) Int() elementMap {
+func (e elementsWithLock) Get() elementMap {
 	return e.in
 }
 

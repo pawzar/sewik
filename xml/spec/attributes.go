@@ -1,16 +1,17 @@
-package structure
+package spec
 
 import (
 	"sync"
 
-	"github.com/subchen/go-xmldom"
+	"sewik/xml/dom"
 )
 
 type Attributes interface {
-	Add(n *xmldom.Attribute)
-	Int() attributesMap
+	Add(n *dom.Attribute)
+	Get() attributesMap
 	Len() int
 }
+type Attribute = int
 
 func NewAttributesWithLock() Attributes {
 	return &attributesWithLock{
@@ -18,14 +19,14 @@ func NewAttributesWithLock() Attributes {
 	}
 }
 
-type attributesMap map[string]int
+type attributesMap map[string]Attribute
 
 type attributesWithLock struct {
 	mx sync.Mutex
 	in attributesMap
 }
 
-func (a *attributesWithLock) Add(n *xmldom.Attribute) {
+func (a *attributesWithLock) Add(n *dom.Attribute) {
 	a.mx.Lock()
 	defer a.mx.Unlock()
 
@@ -40,7 +41,7 @@ func (a *attributesWithLock) Add(n *xmldom.Attribute) {
 	a.in[n.Name] = x
 }
 
-func (a attributesWithLock) Int() attributesMap {
+func (a attributesWithLock) Get() attributesMap {
 	return a.in
 }
 
