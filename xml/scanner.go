@@ -9,7 +9,7 @@ import (
 
 	"sewik/sys"
 	"sewik/xml/dom"
-	"sewik/xml/print"
+	"sewik/xml/printer"
 	"sewik/xml/spec"
 )
 
@@ -31,14 +31,12 @@ func ScanInPaths(p []string, workerPoolSize int) {
 
 	go populateJobs(filenames, p)
 
-	elems := spec.NewElementsWithLock()
+	elements := spec.NewElementsWithLock()
 	for node := range nodes {
-		elems.Add(node)
+		elements.Add(node)
 	}
 
-	print.Elements(elems, 0, 0)
-
-	fmt.Println()
+	printer.PrintElements(elements)
 }
 
 func populateJobs(filenames chan<- string, patterns []string) {

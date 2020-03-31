@@ -11,15 +11,15 @@ type Attributes interface {
 	Get() attributesMap
 	Len() int
 }
-type Attribute = int
+type attribute = int
 
-func NewAttributesWithLock() Attributes {
+func newAttributesWithLock() Attributes {
 	return &attributesWithLock{
 		in: make(attributesMap),
 	}
 }
 
-type attributesMap map[string]Attribute
+type attributesMap map[string]attribute
 
 type attributesWithLock struct {
 	mx sync.Mutex

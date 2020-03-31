@@ -42,7 +42,7 @@ func (e *elementsWithLock) Add(n *dom.Element) {
 	} else {
 		x = Element{
 			Cn: 1,
-			At: NewAttributesWithLock(),
+			At: newAttributesWithLock(),
 			El: NewElementsWithLock(),
 		}
 	}
