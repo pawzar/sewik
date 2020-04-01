@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"flag"
-	"fmt"
 	"log"
 	"strings"
 	"sync"
@@ -56,9 +55,11 @@ func main() {
 
 	// 2. Index documents concurrently
 	flag.Parse()
-	for event := range sewik.EventChannel([]string{"data/in/2019/SEWIK_EXP_N_XML_02_WOJ__PODLASKIE_2019.xml"}, 5) {
+	for event := range sewik.EventChannel(flag.Args(), 5) {
 		wg.Add(1)
 		index(&wg, es.NewDoc(event), client)
+		//bufio.NewReader(os.Stdin).ReadBytes('\n')
+		log.Println(strings.Repeat(".", 37))
 	}
 	wg.Wait()
 
@@ -82,7 +83,7 @@ func main() {
 	// Perform the search request.
 	res, err = client.Search(
 		client.Search.WithContext(context.Background()),
-		client.Search.WithIndex("test"),
+		client.Search.WithIndex("sewik"),
 		client.Search.WithBody(&buf),
 		client.Search.WithTrackTotalHits(true),
 		client.Search.WithPretty(),
@@ -138,13 +139,11 @@ func main() {
 func index(wg *sync.WaitGroup, doc *es.Document, client *elasticsearch.Client) {
 	defer wg.Done()
 
-	fmt.Print(doc)
-
 	// Set up the request object.
 	req := esapi.IndexRequest{
 		Index:      "sewik",
 		DocumentID: doc.Id,
-		Body:       doc.Body,
+		Body:       strings.NewReader(doc.Body),
 		Refresh:    "true",
 	}
 
@@ -156,7 +155,17 @@ func index(wg *sync.WaitGroup, doc *es.Document, client *elasticsearch.Client) {
 	defer res.Body.Close()
 
 	if res.IsError() {
-		log.Printf("[%s] Error indexing document ID=%d", res.Status(), doc.Id)
+		log.Printf("Error indexing document ID=%s", doc.Id)
+
+		var r map[string]interface{}
+
+		if err := json.NewDecoder(res.Body).Decode(&r); err != nil {
+			log.Printf("Error parsing the response body: %s", err)
+		} else {
+			// Print the response status and indexed document version.
+			log.Printf("[%s] %s", res.Status(), r["error"])
+		}
+
 	} else {
 		// Deserialize the response into a map.
 		var r map[string]interface{}

@@ -9,8 +9,7 @@ import (
 	"runtime/pprof"
 	"time"
 
-	"sewik/app/sewik"
-	"sewik/es"
+	"sewik/app/scanner"
 	"sewik/sys"
 )
 
@@ -49,18 +48,14 @@ func main() {
 
 	workerNum := *pool
 
-	if workerNum > len(flag.Args()) {
-		workerNum = len(flag.Args())
-	}
-
-	fmt.Print(`{`)
-	for event := range sewik.EventChannel(flag.Args(), workerNum) {
-		e := es.NewDoc(event)
-		fmt.Print(e)
-		fmt.Println(`,`)
-	}
-
-	fmt.Printf(`"__stat":"%s"}`, sys.MemStats())
+	scanner.ScanFilesInPaths(flag.Args(), workerNum)
+	//fmt.Print(`{`)
+	//for event := range sewik.EventChannel(flag.Args(), workerNum) {
+	//	e := es.NewDoc(event)
+	//	fmt.Print(e)
+	//	fmt.Println(`,`)
+	//}
+	//fmt.Printf(`"__stat":"%s"}`, sys.MemStats())
 
 	if *memFile != "" {
 		f, err := os.Create(*memFile)

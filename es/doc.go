@@ -2,8 +2,6 @@ package es
 
 import (
 	"fmt"
-	"io"
-	"io/ioutil"
 	"strings"
 
 	"sewik/dom"
@@ -14,6 +12,16 @@ const IdElementName = "ID"
 var x = []string{
 	"UCZESTNICY",
 	"POJAZDY",
+	"NAWIERZCHNIA",
+	"STAN_NAWIERZCHNI",
+	"RODZAJ_DROGI",
+	"SYGNALIZACJA_SWIETLNA",
+	"OZNAKOWANIE_POZIOME",
+	"OBSZAR_ZABUDOWANY",
+	"CHARAKT_MIEJSCA",
+	"WARUNKI_ATMOSFERYCZNE",
+	"USZKODZENIA_POZA_POJAZDAMI",
+	"INNE_PRZYCZYNY",
 }
 
 func isArray(name string) bool {
@@ -27,13 +35,11 @@ func isArray(name string) bool {
 
 type Document struct {
 	Id   string
-	Body io.Reader
+	Body string
 }
 
 func (o Document) String() string {
-	body, _ := ioutil.ReadAll(o.Body)
-
-	return fmt.Sprintf(`"%s":%s`, o.Id, string(body))
+	return fmt.Sprintf(`"%s":%s`, o.Id, o.Body)
 }
 
 func NewDoc(element *dom.Element) *Document {
@@ -48,7 +54,7 @@ func NewDoc(element *dom.Element) *Document {
 	var b strings.Builder
 	json(&b, element)
 
-	event.Body = strings.NewReader(b.String())
+	event.Body = b.String()
 
 	return &event
 }

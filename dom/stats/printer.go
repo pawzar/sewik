@@ -17,6 +17,8 @@ func printElements(e Elements, l, c int) {
 
 		if elem.Cn < c {
 			fmt.Print(` _optional="true"`)
+		} else if elem.Cn > c {
+			fmt.Print(` _arrayItem="true"`)
 		}
 
 		printAttributes(elem.At)
