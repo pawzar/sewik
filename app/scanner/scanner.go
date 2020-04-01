@@ -1,4 +1,4 @@
-package xml
+package scanner
 
 import (
 	"fmt"
@@ -7,13 +7,13 @@ import (
 	"path/filepath"
 	"sync"
 
+	"sewik/dom"
+	"sewik/dom/stats"
 	"sewik/sys"
-	"sewik/xml/dom"
-	"sewik/xml/printer"
-	"sewik/xml/spec"
+	"sewik/xml"
 )
 
-func ScanInPaths(p []string, workerPoolSize int) {
+func ScanFilesInPaths(p []string, workerPoolSize int) {
 	filenames := make(chan string)
 	nodes := make(chan *dom.Element)
 
@@ -31,12 +31,12 @@ func ScanInPaths(p []string, workerPoolSize int) {
 
 	go populateJobs(filenames, p)
 
-	elements := spec.NewElementsWithLock()
+	elements := stats.NewElementsWithLock()
 	for node := range nodes {
 		elements.Add(node)
 	}
 
-	printer.PrintElements(elements)
+	stats.Print(elements)
 }
 
 func populateJobs(filenames chan<- string, patterns []string) {
@@ -91,5 +91,5 @@ func parse(filename string) (*dom.Document, error) {
 	}
 	defer file.Close()
 
-	return dom.Parse(file)
+	return xml.Parse(file)
 }

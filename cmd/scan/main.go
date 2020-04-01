@@ -9,8 +9,9 @@ import (
 	"runtime/pprof"
 	"time"
 
+	"sewik/app/sewik"
+	"sewik/es"
 	"sewik/sys"
-	"sewik/xml"
 )
 
 var cpuFile = flag.String("profile.cpu", "", "write cpu profile to `file`")
@@ -47,7 +48,19 @@ func main() {
 	}
 
 	workerNum := *pool
-	xml.ScanInPaths(flag.Args(), workerNum)
+
+	if workerNum > len(flag.Args()) {
+		workerNum = len(flag.Args())
+	}
+
+	fmt.Print(`{`)
+	for event := range sewik.EventChannel(flag.Args(), workerNum) {
+		e := es.NewDoc(event)
+		fmt.Print(e)
+		fmt.Println(`,`)
+	}
+
+	fmt.Printf(`"__stat":"%s"}`, sys.MemStats())
 
 	if *memFile != "" {
 		f, err := os.Create(*memFile)

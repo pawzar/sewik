@@ -1,4 +1,4 @@
-package dom
+package xml
 
 import (
 	"bytes"
@@ -7,9 +7,11 @@ import (
 	"io"
 
 	"golang.org/x/net/html/charset"
+
+	"sewik/dom"
 )
 
-func Parse(r io.Reader) (*Document, error) {
+func Parse(r io.Reader) (*dom.Document, error) {
 	p := xml.NewDecoder(r)
 	p.CharsetReader = charset.NewReaderLabel
 
@@ -18,18 +20,18 @@ func Parse(r io.Reader) (*Document, error) {
 		return nil, err
 	}
 
-	doc := &Document{}
-	var e *Element
+	doc := &dom.Document{}
+	var e *dom.Element
 	for t != nil {
 		switch token := t.(type) {
 		case xml.StartElement:
 			// a new node
-			el := &Element{}
+			el := &dom.Element{}
 			el.Document = doc
 			el.Parent = e
 			el.Name = token.Name.Local
 			for _, attr := range token.Attr {
-				el.Attributes = append(el.Attributes, &Attribute{
+				el.Attributes = append(el.Attributes, &dom.Attribute{
 					Name:  attr.Name.Local,
 					Value: attr.Value,
 				})

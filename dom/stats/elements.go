@@ -1,9 +1,9 @@
-package spec
+package stats
 
 import (
 	"sync"
 
-	"sewik/xml/dom"
+	"sewik/dom"
 )
 
 type Elements interface {

@@ -1,29 +1,29 @@
-package spec
+package stats
 
 import (
 	"sync"
 
-	"sewik/xml/dom"
+	"sewik/dom"
 )
 
 type Attributes interface {
 	Add(n *dom.Attribute)
-	Get() attributesMap
+	Get() attributeMap
 	Len() int
 }
 type attribute = int
 
 func newAttributesWithLock() Attributes {
 	return &attributesWithLock{
-		in: make(attributesMap),
+		in: make(attributeMap),
 	}
 }
 
-type attributesMap map[string]attribute
+type attributeMap map[string]attribute
 
 type attributesWithLock struct {
 	mx sync.Mutex
-	in attributesMap
+	in attributeMap
 }
 
 func (a *attributesWithLock) Add(n *dom.Attribute) {
@@ -41,7 +41,7 @@ func (a *attributesWithLock) Add(n *dom.Attribute) {
 	a.in[n.Name] = x
 }
 
-func (a attributesWithLock) Get() attributesMap {
+func (a attributesWithLock) Get() attributeMap {
 	return a.in
 }
 

@@ -1,17 +1,15 @@
-package printer
+package stats
 
 import (
 	"fmt"
 	"strings"
-
-	"sewik/xml/spec"
 )
 
-func PrintElements(e spec.Elements) {
+func Print(e Elements) {
 	printElements(e, 0, 0)
 }
 
-func printElements(e spec.Elements, l, c int) {
+func printElements(e Elements, l, c int) {
 	for name, elem := range e.Get() {
 		fmt.Printf("\n%s<%s", strings.Repeat("  ", l), name)
 
@@ -21,7 +19,7 @@ func printElements(e spec.Elements, l, c int) {
 			fmt.Print(` _optional="true"`)
 		}
 
-		PrintAttributes(elem.At)
+		printAttributes(elem.At)
 
 		if elem.El.Len() > 0 {
 			fmt.Print(">")
@@ -35,4 +33,10 @@ func printElements(e spec.Elements, l, c int) {
 	}
 
 	fmt.Println()
+}
+
+func printAttributes(a Attributes) {
+	for name, attr := range a.Get() {
+		fmt.Printf(` %s="%d"`, name, attr)
+	}
 }
