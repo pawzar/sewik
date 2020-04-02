@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-func Print(e Elements) {
+func PrintXML(e Elements) {
 	printElements(e, 0, 0)
 }
 

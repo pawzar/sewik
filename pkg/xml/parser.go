@@ -8,7 +8,7 @@ import (
 
 	"golang.org/x/net/html/charset"
 
-	"sewik/dom"
+	"sewik/pkg/dom"
 )
 
 func Parse(r io.Reader) (*dom.Document, error) {

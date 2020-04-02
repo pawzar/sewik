@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"sewik/dom"
+	"sewik/pkg/dom"
 )
 
 const IdElementName = "ID"

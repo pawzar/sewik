@@ -3,7 +3,7 @@ package stats
 import (
 	"sync"
 
-	"sewik/dom"
+	"sewik/pkg/dom"
 )
 
 type Elements interface {

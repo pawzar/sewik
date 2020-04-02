@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"time"
 
-	"sewik/sync"
+	"sewik/pkg/sync"
 )
 
 func digits(number int, dchnl chan int) {

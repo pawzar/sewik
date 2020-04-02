@@ -5,20 +5,22 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"path/filepath"
 	"runtime"
 	"runtime/pprof"
 	"time"
 
-	"sewik/scan/internal"
-	"sewik/sys"
+	"sewik/pkg/dom/stats"
+	"sewik/pkg/es"
+	"sewik/pkg/sewik"
+	"sewik/pkg/sys"
 )
 
 var cpuFile = flag.String("profile.cpu", "", "write cpu profile to `file`")
 var memFile = flag.String("profile.mem", "", "write memory profile to `file`")
-var pool = flag.Int("w", 5, "worker pool size")
+var workerNum = flag.Int("w", 5, "worker pool size")
 var procNum = flag.Int("n", runtime.GOMAXPROCS(0), "set GOMAXPROCS = n")
 var procDiv = flag.Int("d", 3, "set GOMAXPROCS /= d")
+var command = flag.String("c", "xml", "xml|")
 
 func main() {
 	start := time.Now()
@@ -33,7 +35,6 @@ func main() {
 
 	newProcCount := *procNum / *procDiv
 	defaultProcCount := runtime.GOMAXPROCS(newProcCount)
-	log.Printf("procs (max: %d): %d", defaultProcCount, newProcCount)
 
 	if *cpuFile != "" {
 		f, err := os.Create(*cpuFile)
@@ -47,16 +48,13 @@ func main() {
 		defer pprof.StopCPUProfile()
 	}
 
-	workerNum := *pool
-
-	printSummary(flag.Args(), workerNum)
-	//fmt.Print(`{`)
-	//for event := range sewik.EventChannel(flag.Args(), workerNum) {
-	//	e := es.NewDoc(event)
-	//	fmt.Print(e)
-	//	fmt.Println(`,`)
-	//}
-	//fmt.Printf(`"__stat":"%s"}`, sys.MemStats())
+	filenames := sys.Filenames(flag.Args())
+	switch *command {
+	case "xml":
+		printXMLStats(filenames, *workerNum)
+	case "json":
+		printJSON(filenames, *workerNum)
+	}
 
 	if *memFile != "" {
 		f, err := os.Create(*memFile)
@@ -70,24 +68,23 @@ func main() {
 		}
 	}
 
-	log.Print(sys.Stats(start, workerNum, newProcCount, defaultProcCount))
+	log.Print(sys.Stats(start, *workerNum, newProcCount, defaultProcCount))
 }
 
-func printSummary(p []string, workerPoolSize int) {
-	jobs := make(chan string)
-	go func(patterns []string) {
-		defer close(jobs)
+func printJSON(filenames <-chan string, workerNum int) {
+	fmt.Println(`{`)
+	for event := range sewik.ElementsOf("ZDARZENIE", filenames, workerNum) {
+		e := es.NewDoc(event)
+		fmt.Print(e)
+		fmt.Println(`,`)
+	}
+	fmt.Printf(`"__stat":"%s"}\n`, sys.MemStats())
+}
 
-		for _, pattern := range patterns {
-			filenames, _ := filepath.Glob(pattern)
-			for _, filename := range filenames {
-				jobs <- filename
-				log.Printf("[IN] %q", filename)
-			}
-		}
-
-		log.Println("[IN] DONE")
-	}(p)
-
-	internal.PrintSummary(jobs, workerPoolSize)
+func printXMLStats(filenames <-chan string, workerNum int) {
+	elements := stats.NewElementsWithLock()
+	for e := range sewik.RootElements(workerNum, filenames) {
+		elements.Add(e)
+	}
+	stats.PrintXML(elements)
 }

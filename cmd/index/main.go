@@ -11,9 +11,10 @@ import (
 	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/elastic/go-elasticsearch/v7/esapi"
 
-	"sewik/es"
-	"sewik/index/sewik"
-	"sewik/sync"
+	"sewik/pkg/es"
+	"sewik/pkg/sewik"
+	"sewik/pkg/sync"
+	"sewik/pkg/sys"
 )
 
 func main() {
@@ -53,7 +54,7 @@ func main() {
 	// 2. Index documents concurrently
 	wg := sync.LimitingWaitGroup{Limit: 100}
 	flag.Parse()
-	for event := range sewik.EventChannel(flag.Args(), 5) {
+	for event := range sewik.ElementsOf("ZDARZENIE", sys.Filenames(flag.Args()), 5) {
 		wg.Add(1)
 		go index(&wg, es.NewDoc(event), client)
 	}
