@@ -7,22 +7,19 @@ import (
 	"flag"
 	"log"
 	"strings"
-	"sync"
 
 	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/elastic/go-elasticsearch/v7/esapi"
 
-	"sewik/app/sewik"
 	"sewik/es"
+	"sewik/index/sewik"
+	"sewik/sync"
 )
 
 func main() {
 	log.SetFlags(0)
 
-	var (
-		r  map[string]interface{}
-		wg sync.WaitGroup
-	)
+	var r map[string]interface{}
 
 	// Initialize a client with the default settings.
 	//
@@ -54,12 +51,11 @@ func main() {
 	log.Println(strings.Repeat("~", 37))
 
 	// 2. Index documents concurrently
+	wg := sync.LimitingWaitGroup{Limit: 100}
 	flag.Parse()
 	for event := range sewik.EventChannel(flag.Args(), 5) {
 		wg.Add(1)
-		index(&wg, es.NewDoc(event), client)
-		//bufio.NewReader(os.Stdin).ReadBytes('\n')
-		log.Println(strings.Repeat(".", 37))
+		go index(&wg, es.NewDoc(event), client)
 	}
 	wg.Wait()
 
@@ -136,8 +132,10 @@ func main() {
 //  * ID=2, map[title:Test Two]
 // =====================================
 
-func index(wg *sync.WaitGroup, doc *es.Document, client *elasticsearch.Client) {
+func index(wg sync.WaitGroup, doc *es.Document, client *elasticsearch.Client) {
 	defer wg.Done()
+
+	//bufio.NewReader(os.Stdin).ReadBytes('\n')
 
 	// Set up the request object.
 	req := esapi.IndexRequest{
@@ -155,25 +153,19 @@ func index(wg *sync.WaitGroup, doc *es.Document, client *elasticsearch.Client) {
 	defer res.Body.Close()
 
 	if res.IsError() {
-		log.Printf("Error indexing document ID=%s", doc.Id)
-
 		var r map[string]interface{}
-
 		if err := json.NewDecoder(res.Body).Decode(&r); err != nil {
-			log.Printf("Error parsing the response body: %s", err)
+			log.Printf("%s\tError parsing the response body: %s", doc.Id, err)
 		} else {
 			// Print the response status and indexed document version.
-			log.Printf("[%s] %s", res.Status(), r["error"])
+			log.Printf("%s\t[%s] %s", doc.Id, res.Status(), r["error"])
 		}
-
 	} else {
-		// Deserialize the response into a map.
 		var r map[string]interface{}
 		if err := json.NewDecoder(res.Body).Decode(&r); err != nil {
-			log.Printf("Error parsing the response body: %s", err)
+			log.Printf("%s\tError parsing the error response body: %s", doc.Id, err)
 		} else {
-			// Print the response status and indexed document version.
-			log.Printf("[%s] %s; version=%d", res.Status(), r["result"], int(r["_version"].(float64)))
+			log.Printf("%s\t[%s] %s; version=%d", doc.Id, res.Status(), r["result"], int(r["_version"].(float64)))
 		}
 	}
 }

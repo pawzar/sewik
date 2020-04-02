@@ -22,6 +22,8 @@ var x = []string{
 	"WARUNKI_ATMOSFERYCZNE",
 	"USZKODZENIA_POZA_POJAZDAMI",
 	"INNE_PRZYCZYNY",
+	"GEOMETRIA_DROGI",
+	"INFO_O_DRODZE",
 }
 
 func isArray(name string) bool {

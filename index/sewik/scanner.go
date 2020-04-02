@@ -41,27 +41,25 @@ func (wc *workerPool) startWorkers(n int) {
 }
 
 func (wc *workerPool) populateJobs(patterns []string) {
-	go func(patterns []string) {
-		defer close(wc.filenames)
+	defer close(wc.filenames)
 
-		for k, pattern := range patterns {
-			log.Printf("[IN] - %d -", k)
+	for k, pattern := range patterns {
+		log.Printf("[IN] - %d -", k)
 
-			files, _ := filepath.Glob(pattern)
-			for _, file := range files {
-				wc.filenames <- file
-				log.Printf("[IN] %q", file)
-			}
+		files, _ := filepath.Glob(pattern)
+		for _, file := range files {
+			wc.filenames <- file
+			log.Printf("[IN] %q", file)
 		}
+	}
 
-		log.Println("[IN] DONE")
-	}(patterns)
+	log.Println("[IN] DONE")
 }
 
 func EventChannel(searchPaths []string, workerPoolSize int) <-chan *dom.Element {
 	wc := newWorkerPool()
 	wc.startWorkers(workerPoolSize)
-	wc.populateJobs(searchPaths)
+	go wc.populateJobs(searchPaths)
 
 	return wc.events
 }

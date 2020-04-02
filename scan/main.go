@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"runtime"
 	"runtime/pprof"
 	"time"
 
-	"sewik/app/scanner"
+	"sewik/scan/internal"
 	"sewik/sys"
 )
 
@@ -48,7 +49,7 @@ func main() {
 
 	workerNum := *pool
 
-	scanner.ScanFilesInPaths(flag.Args(), workerNum)
+	printSummary(flag.Args(), workerNum)
 	//fmt.Print(`{`)
 	//for event := range sewik.EventChannel(flag.Args(), workerNum) {
 	//	e := es.NewDoc(event)
@@ -70,4 +71,23 @@ func main() {
 	}
 
 	log.Print(sys.Stats(start, workerNum, newProcCount, defaultProcCount))
+}
+
+func printSummary(p []string, workerPoolSize int) {
+	jobs := make(chan string)
+	go func(patterns []string) {
+		defer close(jobs)
+
+		for _, pattern := range patterns {
+			filenames, _ := filepath.Glob(pattern)
+			for _, filename := range filenames {
+				jobs <- filename
+				log.Printf("[IN] %q", filename)
+			}
+		}
+
+		log.Println("[IN] DONE")
+	}(p)
+
+	internal.PrintSummary(jobs, workerPoolSize)
 }

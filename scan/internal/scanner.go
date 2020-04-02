@@ -1,4 +1,4 @@
-package scanner
+package internal
 
 import (
 	"fmt"
@@ -42,9 +42,7 @@ func ScanFilesInPaths(p []string, workerPoolSize int) {
 func populateJobs(filenames chan<- string, patterns []string) {
 	defer close(filenames)
 
-	for k, pattern := range patterns {
-		log.Printf("[IN] - %d -", k)
-
+	for _, pattern := range patterns {
 		files, _ := filepath.Glob(pattern)
 		for _, file := range files {
 			filenames <- file
