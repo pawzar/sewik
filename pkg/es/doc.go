@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"sewik/pkg/dom"
+	"sewik/pkg/json"
 )
 
 const IdElementName = "ID"
@@ -27,6 +28,8 @@ var x = []string{
 	"INFO_O_DRODZE",
 	"STAN_POJAZDU",
 	"MIEJSCE",
+	"INNE_CECHY_POJAZU",
+	"INFO_DODATKOWE",
 }
 
 func isArray(name string) bool {
@@ -42,64 +45,76 @@ type Document struct {
 	ID     string
 	Body   string
 	Source string
+	fs     string
 }
 
 func (o Document) String() string {
-	return fmt.Sprintf(`"id":"%s","source":%s,"body":%s`, o.ID, o.Source, o.Body)
+	return fmt.Sprintf(`{"id":"%s","src":"%s","body":`+o.fs+`}`, o.ID, o.Source, o.Body)
 }
 
 func NewDoc(element *dom.Element, src string) *Document {
-	event := Document{Source: strconv.QuoteToASCII(src)}
+	o := Document{
+		Source: json.Escape(strings.Trim(strconv.QuoteToASCII(src), `"`)),
+		fs:     "%s",
+	}
 
 	for _, c := range element.Children {
 		if c.Name == IdElementName {
-			event.ID = c.Text
+			o.ID = json.Escape(c.Text)
 		}
 	}
 
 	var b strings.Builder
-	json(&b, element)
+	o.fs = jsonize(&b, element, false)
+	o.Body = b.String()
 
-	event.Body = b.String()
-
-	return &event
+	return &o
 }
 
-func json(dest *strings.Builder, e *dom.Element) {
+func jsonize(dest *strings.Builder, e *dom.Element, wrap bool) string {
 	if isArray(e.Name) {
-		jsArray(dest, e)
-
-		return
+		return jsArray(dest, e, wrap)
 	}
 
 	if len(e.Attributes)+len(e.Children) == 0 {
-		jsValue(dest, e)
-
-		return
+		return jsValue(dest, e, wrap)
 	}
 
-	jsObject(dest, e)
+	return jsObject(dest, e, wrap)
 }
 
-func jsValue(dest *strings.Builder, e *dom.Element) {
-	fmt.Fprintf(dest, `"%s"`, e.Text)
+func jsValue(dest *strings.Builder, e *dom.Element, wrap bool) string {
+	fs := `"%s"`
+	if !wrap {
+		fmt.Fprintf(dest, `%s`, json.Escape(e.Text))
+	} else {
+		fmt.Fprintf(dest, fs, json.Escape(e.Text))
+	}
+	return fs
 }
 
-func jsArray(dest *strings.Builder, e *dom.Element) {
+func jsArray(dest *strings.Builder, e *dom.Element, wrap bool) string {
 	var s strings.Builder
+	fs := `[%s]`
 
 	for _, c := range e.Children {
 		addElem(&s, c, true)
 	}
 
-	fmt.Fprintf(dest, `[%s]`, s.String())
+	if !wrap {
+		fmt.Fprintf(dest, `%s`, s.String())
+	} else {
+		fmt.Fprintf(dest, fs, s.String())
+	}
+	return fs
 }
 
-func jsObject(dest *strings.Builder, e *dom.Element) {
+func jsObject(dest *strings.Builder, e *dom.Element, wrap bool) string {
 	var s strings.Builder
+	fs := `{%s}`
 
 	if e.Text != "" {
-		fmt.Fprintf(&s, `"__text":"%s"`, e.Text)
+		fmt.Fprintf(&s, `"__text":"%s"`, json.Escape(e.Text))
 	}
 
 	for _, a := range e.Attributes {
@@ -110,7 +125,12 @@ func jsObject(dest *strings.Builder, e *dom.Element) {
 		addElem(&s, c, false)
 	}
 
-	fmt.Fprintf(dest, `{%s}`, s.String())
+	if !wrap {
+		fmt.Fprintf(dest, `%s`, s.String())
+	} else {
+		fmt.Fprintf(dest, fs, s.String())
+	}
+	return fs
 }
 
 func addAttr(dest *strings.Builder, a *dom.Attribute) {
@@ -118,7 +138,7 @@ func addAttr(dest *strings.Builder, a *dom.Attribute) {
 		fmt.Fprint(dest, `,`)
 	}
 
-	fmt.Fprintf(dest, `"_%s":"%s"`, a.Name, a.Value)
+	fmt.Fprintf(dest, `"_%s":"%s"`, json.Escape(a.Name), json.Escape(a.Value))
 }
 
 func addElem(dest *strings.Builder, e *dom.Element, internalizeName bool) {
@@ -127,10 +147,10 @@ func addElem(dest *strings.Builder, e *dom.Element, internalizeName bool) {
 	}
 
 	if internalizeName {
-		e.SetAttributeValue("_type", e.Name)
+		e.SetAttributeValue("_type", json.Escape(e.Name))
 	} else {
-		fmt.Fprintf(dest, `"%s":`, e.Name)
+		fmt.Fprintf(dest, `"%s":`, json.Escape(e.Name))
 	}
 
-	json(dest, e)
+	jsonize(dest, e, true)
 }

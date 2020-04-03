@@ -139,6 +139,7 @@ func main() {
 	start := time.Now().UTC()
 
 	for d := range sewik.Docs("ZDARZENIE", sys.Filenames(filenames, 100), numWorkers, (numItems+1)*numWorkers) {
+		b := fmt.Sprintf(`{"_file":"%s",%s}`, d.Source, d.Body)
 		err = bi.Add(
 			context.Background(),
 			esutil.BulkIndexerItem{
@@ -149,7 +150,7 @@ func main() {
 				DocumentID: d.ID,
 
 				// Body is an `io.Reader` with the payload
-				Body: strings.NewReader(d.Body),
+				Body: strings.NewReader(b),
 
 				// OnSuccess is called for each successful operation
 				OnSuccess: func(ctx context.Context, item esutil.BulkIndexerItem, res esutil.BulkIndexerResponseItem) {
@@ -160,10 +161,10 @@ func main() {
 				OnFailure: func(ctx context.Context, item esutil.BulkIndexerItem, res esutil.BulkIndexerResponseItem, err error) {
 					if err != nil {
 						log.Printf("ERROR: [%s] %s %s", item.DocumentID, err, d.Source)
-						fmt.Printf(`{"error":"%s","id":"%s","source":%s},`+"\n", err, item.DocumentID, d.Source)
+						fmt.Printf(`{"err":"%s","itemId":"%s","doc":%s},`+"\n", err, item.DocumentID, b)
 					} else {
 						log.Printf("ERROR: [%s] %s: %s %s", item.DocumentID, res.Error.Type, res.Error.Reason, d.Source)
-						fmt.Printf(`{"error":"%s","reason":"%s","id":"%s","source":%s},`+"\n", res.Error.Type, res.Error.Reason, item.DocumentID, d.Source)
+						fmt.Printf(`{"err":"%s","reason":"%s","itemId":"%s","doc":%s},`+"\n", res.Error.Type, res.Error.Reason, item.DocumentID, b)
 					}
 				},
 			},
