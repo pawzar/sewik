@@ -2,6 +2,8 @@ package sync
 
 import (
 	"sync"
+
+	"sewik/pkg/sys"
 )
 
 type WaitGroup interface {
@@ -24,6 +26,7 @@ func (x *LimitingWaitGroup) Add(delta int) {
 			x.Limit = 1
 		}
 		x.ch = make(chan bool, x.Limit)
+		sys.ChUtBo("wgr", x.ch)
 	})
 
 	x.ch <- true

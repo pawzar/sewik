@@ -48,7 +48,7 @@ func main() {
 		defer pprof.StopCPUProfile()
 	}
 
-	filenames := sys.Filenames(flag.Args())
+	filenames := sys.Filenames(flag.Args(), 10000)
 	switch *command {
 	case "xml":
 		printXMLStats(filenames, *workerNum)
@@ -74,7 +74,7 @@ func main() {
 func printJSON(filenames <-chan string, workerNum int) {
 	fmt.Println(`{`)
 	for event := range sewik.ElementsOf("ZDARZENIE", filenames, workerNum) {
-		e := es.NewDoc(event)
+		e := es.NewDoc(event, "")
 		fmt.Print(e)
 		fmt.Println(`,`)
 	}

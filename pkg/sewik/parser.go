@@ -4,19 +4,60 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
+	"strings"
 
 	"sewik/pkg/dom"
+	"sewik/pkg/es"
 	"sewik/pkg/sync"
+	"sewik/pkg/sys"
 	"sewik/pkg/xml"
 )
 
+func Docs(elementName string, filenames <-chan string, workerLimit int, size int) <-chan *es.Document {
+	wg := sync.LimitingWaitGroup{Limit: workerLimit}
+
+	documents := make(chan *es.Document, size)
+	sys.ChUtDo("doc", documents)
+	go func() {
+		wg.Wait()
+		close(documents)
+	}()
+
+	go func() {
+		n := 1
+		for filename := range filenames {
+			wg.Add(1)
+			go func(n int, filename string) {
+				defer wg.Done()
+				log.Printf("[STARTED] %d %q", n, filename)
+
+				doc, err := parse(filename)
+				if err != nil {
+					log.Println(err)
+					return
+				}
+
+				for _, e := range dive(elementName, doc.Root.Children) {
+					documents <- es.NewDoc(e, filename)
+				}
+
+				log.Printf("[FINISHED] %d %q", n, filename)
+			}(n, filename)
+			n++
+		}
+	}()
+
+	return documents
+}
 func ElementsOf(elementName string, filenames <-chan string, workerLimit int) <-chan *dom.Element {
 	wg := sync.LimitingWaitGroup{Limit: workerLimit}
 
-	roots := make(chan *dom.Element)
+	elements := make(chan *dom.Element, 1000)
+	sys.ChUtEl("els", elements)
 	go func() {
 		wg.Wait()
-		close(roots)
+		close(elements)
 	}()
 
 	go func() {
@@ -34,8 +75,8 @@ func ElementsOf(elementName string, filenames <-chan string, workerLimit int) <-
 				}
 
 				for _, e := range dive(elementName, doc.Root.Children) {
-					e.SetAttributeValue("_src", filename)
-					roots <- e
+					e.SetAttributeValue("_src", strings.Replace(strconv.QuoteToASCII(filename), `"`, "", -1))
+					elements <- e
 				}
 
 				log.Printf("[FINISHED] %d %q", n, filename)
@@ -44,13 +85,14 @@ func ElementsOf(elementName string, filenames <-chan string, workerLimit int) <-
 		n++
 	}()
 
-	return roots
+	return elements
 }
 
 func RootElements(workerLimit int, filenames <-chan string) <-chan *dom.Element {
 	wg := sync.LimitingWaitGroup{Limit: workerLimit}
 
 	roots := make(chan *dom.Element)
+	sys.ChUtEl("rts", roots)
 	go func() {
 		wg.Wait()
 		close(roots)

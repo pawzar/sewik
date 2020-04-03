@@ -4,8 +4,9 @@ import (
 	"path/filepath"
 )
 
-func Filenames(p []string) <-chan string {
-	jobs := make(chan string)
+func Filenames(p []string, size int) <-chan string {
+	jobs := make(chan string, size)
+	ChUtSt("jbs", jobs)
 
 	go func() {
 		for _, pattern := range p {

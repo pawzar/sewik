@@ -2,6 +2,7 @@ package es
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"sewik/pkg/dom"
@@ -24,6 +25,8 @@ var x = []string{
 	"INNE_PRZYCZYNY",
 	"GEOMETRIA_DROGI",
 	"INFO_O_DRODZE",
+	"STAN_POJAZDU",
+	"MIEJSCE",
 }
 
 func isArray(name string) bool {
@@ -36,20 +39,21 @@ func isArray(name string) bool {
 }
 
 type Document struct {
-	Id   string
-	Body string
+	ID     string
+	Body   string
+	Source string
 }
 
 func (o Document) String() string {
-	return fmt.Sprintf(`"%s":%s`, o.Id, o.Body)
+	return fmt.Sprintf(`"id":"%s","source":%s,"body":%s`, o.ID, o.Source, o.Body)
 }
 
-func NewDoc(element *dom.Element) *Document {
-	event := Document{}
+func NewDoc(element *dom.Element, src string) *Document {
+	event := Document{Source: strconv.QuoteToASCII(src)}
 
 	for _, c := range element.Children {
 		if c.Name == IdElementName {
-			event.Id = c.Text
+			event.ID = c.Text
 		}
 	}
 
