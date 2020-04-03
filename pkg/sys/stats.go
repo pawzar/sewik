@@ -70,41 +70,8 @@ func ChUtDo(s string, ch chan *es.Document) {
 		}
 	}(rand.Intn(9999))
 }
+
 func ChUtEl(s string, ch chan *dom.Element) {
-	if !statsOn {
-		return
-	}
-	ticker := time.NewTicker(time.Second)
-	go func(r int) {
-		for range ticker.C {
-			c := cap(ch)
-			l := len(ch)
-			u := 0
-			if c > 0 {
-				u = 100 * l / c
-			}
-			log.Printf("[%s %04d] %3d = %7d /%7d\n", s, r, u, l, c)
-		}
-	}(rand.Intn(9999))
-}
-func ChUtBo(s string, ch chan bool) {
-	if !statsOn {
-		return
-	}
-	ticker := time.NewTicker(time.Second)
-	go func(r int) {
-		for range ticker.C {
-			c := cap(ch)
-			l := len(ch)
-			u := 0
-			if c > 0 {
-				u = 100 * l / c
-			}
-			log.Printf("[%s %04d] %3d = %7d /%7d\n", s, r, u, l, c)
-		}
-	}(rand.Intn(9999))
-}
-func ChUtSt(s string, ch chan string) {
 	if !statsOn {
 		return
 	}
