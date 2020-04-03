@@ -51,10 +51,10 @@ func bToMb(b uint64) string {
 	return fmt.Sprintf("%v B", b)
 }
 
-var statsOn bool
+var StatsOn bool
 
 func ChUtDo(s string, ch chan *es.Document) {
-	if !statsOn {
+	if !StatsOn {
 		return
 	}
 	ticker := time.NewTicker(time.Second)
@@ -72,7 +72,7 @@ func ChUtDo(s string, ch chan *es.Document) {
 }
 
 func ChUtEl(s string, ch chan *dom.Element) {
-	if !statsOn {
+	if !StatsOn {
 		return
 	}
 	ticker := time.NewTicker(time.Second)

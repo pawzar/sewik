@@ -34,6 +34,7 @@ var (
 	flushBytes int
 	numItems   int
 	filenames  []string
+	statsOn    bool
 )
 
 func init() {
@@ -41,9 +42,11 @@ func init() {
 	flag.IntVar(&numWorkers, "workers", runtime.NumCPU()/2, "Number of indexer workers")
 	flag.IntVar(&flushBytes, "flush", 5e+6, "Flush threshold in bytes")
 	flag.IntVar(&numItems, "count", 10000, "Number of documents to generate")
+	flag.BoolVar(&statsOn, "stats", false, "should the stats be on")
 
 	flag.Parse()
 
+	sys.StatsOn = statsOn
 	filenames = flag.Args()
 
 	rand.Seed(time.Now().UnixNano())
@@ -156,17 +159,17 @@ func main() {
 				// OnFailure is called for each failed operation
 				OnFailure: func(ctx context.Context, item esutil.BulkIndexerItem, res esutil.BulkIndexerResponseItem, err error) {
 					if err != nil {
-						log.Printf("ERROR: [%s] %s", item.DocumentID, err)
-						fmt.Printf(`{"error":"%s","id":"%s"},`+"\n", err, item.DocumentID)
+						log.Printf("ERROR: [%s] %s %s", item.DocumentID, err, d.Source)
+						fmt.Printf(`{"error":"%s","id":"%s","source":%s},`+"\n", err, item.DocumentID, d.Source)
 					} else {
-						log.Printf("ERROR: [%s] %s: %s", item.DocumentID, res.Error.Type, res.Error.Reason)
-						fmt.Printf(`{"error":"%s","reason":"%s","id":"%s"},`+"\n", res.Error.Type, res.Error.Reason, item.DocumentID)
+						log.Printf("ERROR: [%s] %s: %s %s", item.DocumentID, res.Error.Type, res.Error.Reason, d.Source)
+						fmt.Printf(`{"error":"%s","reason":"%s","id":"%s","source":%s},`+"\n", res.Error.Type, res.Error.Reason, item.DocumentID, d.Source)
 					}
 				},
 			},
 		)
 		if err != nil {
-			log.Fatalf("Unexpected error: %s [%s]", err, d.ID)
+			log.Fatalf("Unexpected error: %s [%s] %s", err, d.ID, d.Source)
 		}
 	}
 
