@@ -28,19 +28,6 @@ import (
 	"sewik/pkg/sys"
 )
 
-type Article struct {
-	ID        int       `json:"id"`
-	Title     string    `json:"title"`
-	Body      string    `json:"body"`
-	Published time.Time `json:"published"`
-	Author    Author    `json:"author"`
-}
-
-type Author struct {
-	FirstName string `json:"first_name"`
-	LastName  string `json:"last_name"`
-}
-
 var (
 	indexName  string
 	numWorkers int
@@ -135,7 +122,7 @@ func main() {
 	}
 	res.Body.Close()
 	res, err = es.Indices.Create(indexName, es.Indices.Create.WithBody(strings.NewReader(`{
-	"settings":{"index": {"number_of_replicas": 0}},
+	"settings":{"index": {"number_of_replicas": 0}}
 	}`)))
 	if err != nil {
 		log.Fatalf("Cannot create index: %s", err)
