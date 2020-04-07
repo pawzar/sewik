@@ -3,11 +3,11 @@ package stats
 import (
 	"sync"
 
-	"sewik/pkg/dom"
+	"github.com/subchen/go-xmldom"
 )
 
 type Attributes interface {
-	Add(n *dom.Attribute)
+	Add(n *xmldom.Attribute)
 	Get() attributeMap
 	Len() int
 }
@@ -26,7 +26,7 @@ type attributesWithLock struct {
 	in attributeMap
 }
 
-func (a *attributesWithLock) Add(n *dom.Attribute) {
+func (a *attributesWithLock) Add(n *xmldom.Attribute) {
 	a.mx.Lock()
 	defer a.mx.Unlock()
 

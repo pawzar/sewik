@@ -6,12 +6,11 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/subchen/go-xmldom"
 	"golang.org/x/net/html/charset"
-
-	"sewik/pkg/dom"
 )
 
-func Parse(r io.Reader) (*dom.Document, error) {
+func Parse(r io.Reader) (*xmldom.Document, error) {
 	p := xml.NewDecoder(r)
 	p.CharsetReader = charset.NewReaderLabel
 
@@ -20,18 +19,17 @@ func Parse(r io.Reader) (*dom.Document, error) {
 		return nil, err
 	}
 
-	doc := &dom.Document{}
-	var e *dom.Element
+	doc := &xmldom.Document{}
+	var e *xmldom.Node
 	for t != nil {
 		switch token := t.(type) {
 		case xml.StartElement:
-			// a new node
-			el := &dom.Element{}
+			el := &xmldom.Node{}
 			el.Document = doc
 			el.Parent = e
 			el.Name = token.Name.Local
 			for _, attr := range token.Attr {
-				el.Attributes = append(el.Attributes, &dom.Attribute{
+				el.Attributes = append(el.Attributes, &xmldom.Attribute{
 					Name:  attr.Name.Local,
 					Value: attr.Value,
 				})
@@ -47,7 +45,6 @@ func Parse(r io.Reader) (*dom.Document, error) {
 		case xml.EndElement:
 			e = e.Parent
 		case xml.CharData:
-			// text node
 			if e != nil {
 				e.Text = string(bytes.TrimSpace(token))
 			}
@@ -57,16 +54,13 @@ func Parse(r io.Reader) (*dom.Document, error) {
 			doc.Directives = append(doc.Directives, stringifyDirective(&token))
 		}
 
-		// get the next token
 		t, err = p.Token()
 	}
 
-	// Make sure that reading stopped on EOF
 	if err != io.EOF {
 		return nil, err
 	}
 
-	// All is good, return the document
 	return doc, nil
 }
 

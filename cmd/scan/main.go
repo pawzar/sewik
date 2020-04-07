@@ -73,8 +73,8 @@ func main() {
 
 func printJSON(filenames <-chan string, workerNum int) {
 	fmt.Println(`{`)
-	for event := range sewik.ElementsOf("ZDARZENIE", filenames, workerNum) {
-		e := es.NewDoc(event, "")
+	for event := range sewik.ElementsOf("ZDARZENIE", filenames, workerNum, 1000) {
+		e := es.NewDocWithSrc(event, "")
 		fmt.Print(e)
 		fmt.Println(`,`)
 	}
@@ -83,7 +83,7 @@ func printJSON(filenames <-chan string, workerNum int) {
 
 func printXMLStats(filenames <-chan string, workerNum int) {
 	elements := stats.NewElementsWithLock()
-	for e := range sewik.RootElements(workerNum, filenames) {
+	for e := range sewik.Roots(filenames, workerNum, 100) {
 		elements.Add(e)
 	}
 	stats.PrintXML(elements)

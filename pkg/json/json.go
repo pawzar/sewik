@@ -1,14 +1,32 @@
 package json
 
-import (
-	"encoding/json"
-)
+type Map map[string][]interface{}
 
-func Escape(i string) string {
-	b, err := json.Marshal(i)
-	if err != nil {
-		panic(err)
+func NewMap() Map {
+	return make(Map)
+}
+func NewMapFrom(mm Map) Map {
+	n := NewMap()
+	n.AddFrom(mm)
+	return n
+}
+func NewMapAs(name string, mm Map) Map {
+	n := NewMap()
+	n.AddAs(name, mm)
+	return n
+}
+func (m Map) AddAs(key string, mm Map) {
+	m[key] = append(m[key], mm)
+}
+func (m Map) AddFrom(mm Map) {
+	for key, items := range mm {
+		m[key] = append(m[key], items...)
 	}
-	s := string(b)
-	return s[1 : len(s)-1]
+}
+func (m Map) AddStringAs(key string, vv ...string) {
+	for _, v := range vv {
+		if v != "" {
+			m[key] = append(m[key], v)
+		}
+	}
 }

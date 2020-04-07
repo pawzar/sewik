@@ -3,11 +3,11 @@ package stats
 import (
 	"sync"
 
-	"sewik/pkg/dom"
+	"github.com/subchen/go-xmldom"
 )
 
 type Elements interface {
-	Add(n *dom.Element)
+	Add(n *xmldom.Node)
 	Get() elementMap
 	Len() int
 }
@@ -31,7 +31,7 @@ type elementsWithLock struct {
 
 type elementMap map[string]Element
 
-func (e *elementsWithLock) Add(n *dom.Element) {
+func (e *elementsWithLock) Add(n *xmldom.Node) {
 	e.mx.Lock()
 	defer e.mx.Unlock()
 

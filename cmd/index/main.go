@@ -34,7 +34,6 @@ var (
 	flushBytes int
 	numItems   int
 	filenames  []string
-	statsOn    bool
 )
 
 func init() {
@@ -42,16 +41,15 @@ func init() {
 	flag.IntVar(&numWorkers, "workers", runtime.NumCPU()/2, "Number of indexer workers")
 	flag.IntVar(&flushBytes, "flush", 5e+6, "Flush threshold in bytes")
 	flag.IntVar(&numItems, "count", 10000, "Number of documents to generate")
-	flag.BoolVar(&statsOn, "stats", false, "should the stats be on")
 
 	flag.Parse()
 
-	sys.StatsOn = statsOn
 	filenames = flag.Args()
 
 	rand.Seed(time.Now().UnixNano())
 }
 
+//Indexed [5,661,291] documents with [927,837] errors in 49m4.365s (1,922 docs/sec)
 func main() {
 	log.SetFlags(0)
 
@@ -138,8 +136,8 @@ func main() {
 
 	start := time.Now().UTC()
 
-	for d := range sewik.Docs("ZDARZENIE", sys.Filenames(filenames, 100), numWorkers, (numItems+1)*numWorkers) {
-		b := fmt.Sprintf(`{"_file":"%s",%s}`, d.Source, d.Body)
+	for d := range sewik.EsDocs(sewik.ElementsOf("ZDARZENIE", sys.Filenames(filenames, 100), numWorkers, (numItems+1)*numWorkers)) {
+		b := d.String()
 		err = bi.Add(
 			context.Background(),
 			esutil.BulkIndexerItem{
@@ -161,10 +159,10 @@ func main() {
 				OnFailure: func(ctx context.Context, item esutil.BulkIndexerItem, res esutil.BulkIndexerResponseItem, err error) {
 					if err != nil {
 						log.Printf("ERROR: [%s] %s %s", item.DocumentID, err, d.Source)
-						fmt.Printf(`{"err":"%s","itemId":"%s","doc":%s},`+"\n", err, item.DocumentID, b)
+						fmt.Printf(`{"err":"%s","itemId":"%s","doc":%s}`+"\n", err, item.DocumentID, b)
 					} else {
 						log.Printf("ERROR: [%s] %s: %s %s", item.DocumentID, res.Error.Type, res.Error.Reason, d.Source)
-						fmt.Printf(`{"err":"%s","reason":"%s","itemId":"%s","doc":%s},`+"\n", res.Error.Type, res.Error.Reason, item.DocumentID, b)
+						fmt.Printf(`{"err":"%s","reason":"%s","itemId":"%s","doc":%s}`+"\n", res.Error.Type, res.Error.Reason, item.DocumentID, b)
 					}
 				},
 			},
