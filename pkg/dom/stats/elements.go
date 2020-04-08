@@ -14,7 +14,7 @@ type Elements interface {
 
 type Element struct {
 	Cn int
-	At Attributes
+	At attributes
 	El Elements
 }
 

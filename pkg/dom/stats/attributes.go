@@ -6,14 +6,14 @@ import (
 	"github.com/subchen/go-xmldom"
 )
 
-type Attributes interface {
+type attributes interface {
 	Add(n *xmldom.Attribute)
 	Get() attributeMap
 	Len() int
 }
 type attribute = int
 
-func newAttributesWithLock() Attributes {
+func newAttributesWithLock() attributes {
 	return &attributesWithLock{
 		in: make(attributeMap),
 	}

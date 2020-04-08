@@ -28,7 +28,7 @@ func printElements(e Elements, l, c int) {
 	}
 }
 
-func printAttributes(a Attributes) {
+func printAttributes(a attributes) {
 	for name, attr := range a.Get() {
 		fmt.Printf(` %s="%d"`, name, attr)
 	}
