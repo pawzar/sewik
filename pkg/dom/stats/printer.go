@@ -14,14 +14,6 @@ func printElements(e Elements, l, c int) {
 	for name, elem := range e.Get() {
 		fmt.Printf("\n%s<%s", strings.Repeat("  ", l), name)
 
-		fmt.Printf(` _count="%d"`, elem.Cn)
-
-		if elem.Cn < c {
-			fmt.Print(` _optional="true"`)
-		} else if elem.Cn > c {
-			fmt.Print(` _arrayItem="true"`)
-		}
-
 		printAttributes(elem.At)
 
 		if elem.El.Len() > 0 {
