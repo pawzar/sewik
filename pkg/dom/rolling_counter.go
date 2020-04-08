@@ -8,30 +8,16 @@ import (
 
 func NewRollingCounter() *RollingCounter {
 	return &RollingCounter{
-		F: make(rollingCounterFields),
+		Fields: make(rollingCounterFields),
 	}
 }
 
 type rollingCounterFields map[string]*RollingCounter
 
 type RollingCounter struct {
-	m sync.RWMutex
-	C int
-	F rollingCounterFields
-}
-
-func (c *RollingCounter) MarshalJSON() ([]byte, error) {
-	if len(c.F) == 1 {
-		for _, v := range c.F {
-			if v.C == 1 {
-				for _, x := range c.F {
-					return json2.Marshal(x)
-				}
-			}
-			return json2.Marshal(v)
-		}
-	}
-	return json2.Marshal(c.F)
+	m      sync.RWMutex
+	Count  int
+	Fields rollingCounterFields
 }
 
 func (c *RollingCounter) String() string {
@@ -52,8 +38,8 @@ func (c *RollingCounter) Add(n *Counter) {
 func (c *RollingCounter) add(i int) {
 	c.m.Lock()
 	defer c.m.Unlock()
-	if i > c.C {
-		c.C = i
+	if i > c.Count {
+		c.Count = i
 	}
 }
 
@@ -64,10 +50,10 @@ func (c *RollingCounter) addToChild(s string, v *Counter) {
 func (c *RollingCounter) find(s string) *RollingCounter {
 	c.m.Lock()
 	defer c.m.Unlock()
-	ff, ok := c.F[s]
+	ff, ok := c.Fields[s]
 	if !ok {
 		ff = NewRollingCounter()
-		c.F[s] = ff
+		c.Fields[s] = ff
 	}
 	return ff
 }

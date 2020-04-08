@@ -20,20 +20,6 @@ type Counter struct {
 	f counterFields
 }
 
-func (c *Counter) MarshalJSON() ([]byte, error) {
-	if len(c.f) == 1 {
-		for _, v := range c.f {
-			if v.c == 1 {
-				for _, x := range c.f {
-					return json2.Marshal(x)
-				}
-			}
-			return json2.Marshal(v)
-		}
-	}
-	return json2.Marshal(c.f)
-}
-
 type counterFields map[string]*Counter
 
 func (c *Counter) String() string {

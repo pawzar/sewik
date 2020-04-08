@@ -44,11 +44,11 @@ func printJSON(filenames <-chan string, workerNum int, pipeSize int) {
 
 func printJSON2(filenames <-chan string, workerNum int, pipeSize int) {
 	ch := sewik.ElementsOf("ZDARZENIE", filenames, workerNum, workerNum*(pipeSize+1))
-	cnt := dom.NewRollingCounter()
+	//cnt := dom.NewRollingCounter()
 	for nn := range ch {
-		counter := dom.NewCounter().WithNode(nn)
-		cnt.Add(counter)
-		fmt.Println(cnt.String())
+		//counter := dom.NewCounter().WithNode(nn)
+		//cnt.Add(counter)
+		fmt.Println(dom.NewObject().From(nn).String())
 	}
 }
 
