@@ -36,20 +36,35 @@ var (
 	filenames  []string
 )
 
-func init() {
-	flag.StringVar(&indexName, "index", "idx", "Index name")
-	flag.IntVar(&numWorkers, "workers", runtime.NumCPU()/2, "Number of indexer workers")
-	flag.IntVar(&flushBytes, "flush", 5e+6, "Flush threshold in bytes")
-	flag.IntVar(&numItems, "count", 10000, "Number of documents to generate")
-
-	flag.Parse()
-
-	filenames = flag.Args()
-
-	rand.Seed(time.Now().UnixNano())
+func work(bi esutil.BulkIndexer, countSuccessful uint64) {
+	for d := range sewik.ElasticDocs(sewik.ElementsOf("ZDARZENIE", sys.Filenames(filenames, 100), numWorkers, (numItems+1)*numWorkers)) {
+		b := d.String()
+		err := bi.Add(
+			context.Background(),
+			esutil.BulkIndexerItem{
+				Action:     "index",
+				DocumentID: d.ID,
+				Body:       strings.NewReader(b),
+				OnSuccess: func(ctx context.Context, item esutil.BulkIndexerItem, res esutil.BulkIndexerResponseItem) {
+					atomic.AddUint64(&countSuccessful, 1)
+				},
+				OnFailure: func(ctx context.Context, item esutil.BulkIndexerItem, res esutil.BulkIndexerResponseItem, err error) {
+					if err != nil {
+						log.Printf("ERROR: [%s] %s %s", item.DocumentID, err, d.Source)
+						fmt.Printf(`{"err":"%s","itemId":"%s","doc":%s}`+"\n", err, item.DocumentID, b)
+					} else {
+						log.Printf("ERROR: [%s] %s: %s %s", item.DocumentID, res.Error.Type, res.Error.Reason, d.Source)
+						fmt.Printf(`{"err":"%s","reason":"%s","itemId":"%s","doc":%s}`+"\n", res.Error.Type, res.Error.Reason, item.DocumentID, b)
+					}
+				},
+			},
+		)
+		if err != nil {
+			log.Fatalf("Unexpected error: %s [%s] %s", err, d.ID, d.Source)
+		}
+	}
 }
 
-//Indexed [5,661,291] documents with [927,837] errors in 49m4.365s (1,922 docs/sec)
 func main() {
 	log.SetFlags(0)
 
@@ -117,7 +132,6 @@ func main() {
 	// <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
 	// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-	// Re-create the index
 	if res, err = es.Indices.Delete([]string{indexName}, es.Indices.Delete.WithIgnoreUnavailable(true)); err != nil || res.IsError() {
 		log.Fatalf("Cannot delete index: %s", err)
 	}
@@ -136,44 +150,9 @@ func main() {
 
 	start := time.Now().UTC()
 
-	for d := range sewik.ElasticDocs(sewik.ElementsOf("ZDARZENIE", sys.Filenames(filenames, 100), numWorkers, (numItems+1)*numWorkers)) {
-		b := d.String()
-		err = bi.Add(
-			context.Background(),
-			esutil.BulkIndexerItem{
-				// Action field configures the operation to perform (index, create, delete, update)
-				Action: "index",
-
-				// DocumentID is the (optional) document ID
-				DocumentID: d.ID,
-
-				// Body is an `io.Reader` with the payload
-				Body: strings.NewReader(b),
-
-				// OnSuccess is called for each successful operation
-				OnSuccess: func(ctx context.Context, item esutil.BulkIndexerItem, res esutil.BulkIndexerResponseItem) {
-					atomic.AddUint64(&countSuccessful, 1)
-				},
-
-				// OnFailure is called for each failed operation
-				OnFailure: func(ctx context.Context, item esutil.BulkIndexerItem, res esutil.BulkIndexerResponseItem, err error) {
-					if err != nil {
-						log.Printf("ERROR: [%s] %s %s", item.DocumentID, err, d.Source)
-						fmt.Printf(`{"err":"%s","itemId":"%s","doc":%s}`+"\n", err, item.DocumentID, b)
-					} else {
-						log.Printf("ERROR: [%s] %s: %s %s", item.DocumentID, res.Error.Type, res.Error.Reason, d.Source)
-						fmt.Printf(`{"err":"%s","reason":"%s","itemId":"%s","doc":%s}`+"\n", res.Error.Type, res.Error.Reason, item.DocumentID, b)
-					}
-				},
-			},
-		)
-		if err != nil {
-			log.Fatalf("Unexpected error: %s [%s] %s", err, d.ID, d.Source)
-		}
-	}
+	work(bi, countSuccessful)
 
 	// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-	// Close the indexer
 	if err := bi.Close(context.Background()); err != nil {
 		log.Fatalf("Unexpected error: %s", err)
 	}
@@ -201,4 +180,17 @@ func main() {
 			humanize.Comma(int64(1000.0/float64(dur/time.Millisecond)*float64(biStats.NumFlushed))),
 		)
 	}
+}
+
+func init() {
+	flag.StringVar(&indexName, "index", "idx", "Index name")
+	flag.IntVar(&numWorkers, "workers", runtime.NumCPU()/2, "Number of indexer workers")
+	flag.IntVar(&flushBytes, "flush", 5e+6, "Flush threshold in bytes")
+	flag.IntVar(&numItems, "count", 10000, "Number of documents to generate")
+
+	flag.Parse()
+
+	filenames = flag.Args()
+
+	rand.Seed(time.Now().UnixNano())
 }

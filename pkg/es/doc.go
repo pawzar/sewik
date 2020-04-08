@@ -31,13 +31,6 @@ func NewDoc(node *xmldom.Node) *Doc {
 		m:      nodes.NewInnerMap(node),
 	}
 }
-func NewDocWithSrc(node *xmldom.Node, src string) *Doc {
-	return &Doc{
-		ID:     findID(node),
-		Source: src,
-		m:      nodes.NewMap(node),
-	}
-}
 
 func findSrc(node *xmldom.Node) string {
 	var src string

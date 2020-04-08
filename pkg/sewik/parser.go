@@ -8,20 +8,31 @@ import (
 
 	"github.com/subchen/go-xmldom"
 
+	"sewik/pkg/dom"
 	"sewik/pkg/es"
 	"sewik/pkg/sync"
 	"sewik/pkg/xml"
 )
 
-func ElasticDocs(in <-chan *xmldom.Node) <-chan *es.Doc {
-	documents := make(chan *es.Doc, cap(in))
+func ElasticDocs(n <-chan *xmldom.Node) <-chan *es.Doc {
+	documents := make(chan *es.Doc, cap(n))
 
-	for e := range in {
-		documents <- es.NewDoc(e)
+	for nn := range n {
+		documents <- es.NewDoc(nn)
 	}
 	close(documents)
 
 	return documents
+}
+func Counters(n <-chan *xmldom.Node) <-chan *dom.Counter {
+	counters := make(chan *dom.Counter, cap(n))
+
+	for nn := range n {
+		counters <- dom.NewCounter().WithNode(nn)
+	}
+	close(counters)
+
+	return counters
 }
 
 func ElementsOf(elementName string, filenames <-chan string, workerLimit int, size int) <-chan *xmldom.Node {
@@ -50,7 +61,7 @@ func ElementsOf(elementName string, filenames <-chan string, workerLimit int, si
 				}
 
 				for _, e := range dive(elementName, doc.Root.Children) {
-					e.SetAttributeValue("src", filename)
+					e.SetAttributeValue("_src", filename)
 					elements <- e
 				}
 

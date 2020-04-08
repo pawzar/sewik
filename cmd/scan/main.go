@@ -9,6 +9,7 @@ import (
 	"runtime/pprof"
 	"time"
 
+	"sewik/pkg/dom"
 	"sewik/pkg/dom/stats"
 	"sewik/pkg/es"
 	"sewik/pkg/sewik"
@@ -35,13 +36,20 @@ func main() {
 }
 
 func printJSON(filenames <-chan string, workerNum int, pipeSize int) {
-	fmt.Println(`{`)
 	for event := range sewik.ElementsOf("ZDARZENIE", filenames, workerNum, workerNum*(pipeSize+1)) {
-		e := es.NewDocWithSrc(event, "")
-		fmt.Print(e)
-		fmt.Println(`,`)
+		e := es.NewDoc(event)
+		fmt.Println(e)
 	}
-	fmt.Printf(`"__stat":"%s"}\n`, sys.MemStats())
+}
+
+func printJSON2(filenames <-chan string, workerNum int, pipeSize int) {
+	ch := sewik.ElementsOf("ZDARZENIE", filenames, workerNum, workerNum*(pipeSize+1))
+	cnt := dom.NewRollingCounter()
+	for nn := range ch {
+		counter := dom.NewCounter().WithNode(nn)
+		cnt.Add(counter)
+		fmt.Println(cnt.String())
+	}
 }
 
 func printXMLStats(filenames <-chan string, workerNum int, pipeSize int) {
@@ -59,6 +67,8 @@ func commands(s string, workerCount int, pipeSize int) {
 		printXMLStats(filenames, workerCount, pipeSize)
 	case "json":
 		printJSON(filenames, workerCount, pipeSize)
+	case "c":
+		printJSON2(filenames, workerCount, pipeSize)
 	}
 }
 
