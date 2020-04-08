@@ -136,7 +136,7 @@ func main() {
 
 	start := time.Now().UTC()
 
-	for d := range sewik.EsDocs(sewik.ElementsOf("ZDARZENIE", sys.Filenames(filenames, 100), numWorkers, (numItems+1)*numWorkers)) {
+	for d := range sewik.ElasticDocs(sewik.ElementsOf("ZDARZENIE", sys.Filenames(filenames, 100), numWorkers, (numItems+1)*numWorkers)) {
 		b := d.String()
 		err = bi.Add(
 			context.Background(),

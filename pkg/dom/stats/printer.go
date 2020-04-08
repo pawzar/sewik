@@ -7,6 +7,7 @@ import (
 
 func PrintXML(e Elements) {
 	printElements(e, 0, 0)
+	fmt.Println()
 }
 
 func printElements(e Elements, l, c int) {
@@ -33,8 +34,6 @@ func printElements(e Elements, l, c int) {
 			fmt.Print(" />")
 		}
 	}
-
-	fmt.Println()
 }
 
 func printAttributes(a Attributes) {

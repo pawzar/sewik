@@ -17,26 +17,62 @@ import (
 
 var cpuFile = flag.String("profile.cpu", "", "write cpu profile to `file`")
 var memFile = flag.String("profile.mem", "", "write memory profile to `file`")
-var workerNum = flag.Int("w", 5, "worker pool size")
+var workNum = flag.Int("w", 5, "worker pool size")
+var pipeSize = flag.Int("p", 10000, "pipe size per one worker")
 var procNum = flag.Int("n", runtime.GOMAXPROCS(0), "set GOMAXPROCS = n")
 var procDiv = flag.Int("d", 3, "set GOMAXPROCS /= d")
-var command = flag.String("c", "xml", "xml|")
+var cmd = flag.String("c", "xml", "xml|json")
 
 func main() {
 	start := time.Now()
+	flags()
+	newProcCount := *procNum / *procDiv
+	defaultProcCount := runtime.GOMAXPROCS(newProcCount)
+	cpuStats(*cpuFile)
+	commands(*cmd, *workNum, *pipeSize)
+	memStats(*memFile)
+	log.Print(sys.Stats(start, *workNum, newProcCount, defaultProcCount))
+}
 
+func printJSON(filenames <-chan string, workerNum int, pipeSize int) {
+	fmt.Println(`{`)
+	for event := range sewik.ElementsOf("ZDARZENIE", filenames, workerNum, workerNum*(pipeSize+1)) {
+		e := es.NewDocWithSrc(event, "")
+		fmt.Print(e)
+		fmt.Println(`,`)
+	}
+	fmt.Printf(`"__stat":"%s"}\n`, sys.MemStats())
+}
+
+func printXMLStats(filenames <-chan string, workerNum int, pipeSize int) {
+	elements := stats.NewElementsWithLock()
+	for e := range sewik.ElementsOf("ZDARZENIE", filenames, workerNum, workerNum*(pipeSize+1)) {
+		elements.Add(e)
+	}
+	stats.PrintXML(elements)
+}
+
+func commands(s string, workerCount int, pipeSize int) {
+	filenames := sys.Filenames(flag.Args(), 500)
+	switch s {
+	case "xml":
+		printXMLStats(filenames, workerCount, pipeSize)
+	case "json":
+		printJSON(filenames, workerCount, pipeSize)
+	}
+}
+
+func flags() {
 	flag.Parse()
-
 	if flag.NArg() == 0 {
 		fmt.Fprintln(os.Stderr, "Usage: sewik (files... | \"glob\") [options]\nOptions:")
 		flag.PrintDefaults()
 		os.Exit(1)
 	}
+}
 
-	newProcCount := *procNum / *procDiv
-	defaultProcCount := runtime.GOMAXPROCS(newProcCount)
-
-	if *cpuFile != "" {
+func cpuStats(s string) {
+	if s != "" {
 		f, err := os.Create(*cpuFile)
 		if err != nil {
 			log.Fatal("could not create CPU profile: ", err)
@@ -47,44 +83,18 @@ func main() {
 		}
 		defer pprof.StopCPUProfile()
 	}
+}
 
-	filenames := sys.Filenames(flag.Args(), 10000)
-	switch *command {
-	case "xml":
-		printXMLStats(filenames, *workerNum)
-	case "json":
-		printJSON(filenames, *workerNum)
-	}
-
-	if *memFile != "" {
+func memStats(s string) {
+	if s != "" {
 		f, err := os.Create(*memFile)
 		if err != nil {
 			log.Fatal("could not create memory profile: ", err)
 		}
-		defer f.Close() // error handling omitted for example
-		runtime.GC()    // get up-to-date statistics
+		defer f.Close()
+		runtime.GC()
 		if err := pprof.WriteHeapProfile(f); err != nil {
 			log.Fatal("could not write memory profile: ", err)
 		}
 	}
-
-	log.Print(sys.Stats(start, *workerNum, newProcCount, defaultProcCount))
-}
-
-func printJSON(filenames <-chan string, workerNum int) {
-	fmt.Println(`{`)
-	for event := range sewik.ElementsOf("ZDARZENIE", filenames, workerNum, 1000) {
-		e := es.NewDocWithSrc(event, "")
-		fmt.Print(e)
-		fmt.Println(`,`)
-	}
-	fmt.Printf(`"__stat":"%s"}\n`, sys.MemStats())
-}
-
-func printXMLStats(filenames <-chan string, workerNum int) {
-	elements := stats.NewElementsWithLock()
-	for e := range sewik.Roots(filenames, workerNum, 100) {
-		elements.Add(e)
-	}
-	stats.PrintXML(elements)
 }

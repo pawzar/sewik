@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"sync/atomic"
 
 	"github.com/subchen/go-xmldom"
 
@@ -12,7 +13,7 @@ import (
 	"sewik/pkg/xml"
 )
 
-func EsDocs(in <-chan *xmldom.Node) <-chan *es.Doc {
+func ElasticDocs(in <-chan *xmldom.Node) <-chan *es.Doc {
 	documents := make(chan *es.Doc, cap(in))
 
 	for e := range in {
@@ -32,12 +33,14 @@ func ElementsOf(elementName string, filenames <-chan string, workerLimit int, si
 		close(elements)
 	}()
 
+	var n uint32
+
 	go func() {
-		n := 1
 		for filename := range filenames {
 			wg.Add(1)
 			go func(filename string) {
 				defer wg.Done()
+				atomic.AddUint32(&n, 1)
 				log.Printf("[STARTED] %d %q", n, filename)
 
 				doc, err := parse(filename)
@@ -54,49 +57,9 @@ func ElementsOf(elementName string, filenames <-chan string, workerLimit int, si
 				log.Printf("[FINISHED] %d %q", n, filename)
 			}(filename)
 		}
-		n++
 	}()
 
 	return elements
-}
-
-func Roots(filenames <-chan string, workerLimit int, size int) <-chan *xmldom.Node {
-	wg := sync.LimitingWaitGroup{Limit: workerLimit}
-
-	roots := make(chan *xmldom.Node, size)
-	go func() {
-		wg.Wait()
-		close(roots)
-	}()
-
-	go func() {
-		n := 1
-		for filename := range filenames {
-			wg.Add(1)
-			log.Printf("[DISPATCH] %d %q", n, filename)
-
-			go func(n int, filename string) {
-				defer wg.Done()
-				log.Printf("[START] %d %q", n, filename)
-
-				fmt.Printf("<!-- %s -->\n", filename)
-
-				doc, err := parse(filename)
-				if err != nil {
-					log.Println(err)
-					return
-				}
-
-				roots <- doc.Root
-
-				log.Printf("[STOP] %d %q", n, filename)
-			}(n, filename)
-
-			n++
-		}
-	}()
-
-	return roots
 }
 
 func parse(filename string) (*xmldom.Document, error) {
