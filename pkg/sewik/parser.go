@@ -42,8 +42,9 @@ func ElementsOf(elementName string, filenames <-chan string, workerLimit int, si
 			wg.Add(1)
 			go func(filename string) {
 				defer wg.Done()
-				atomic.AddUint32(&n, 1)
-				log.Printf("[STARTED] %d %q", n, filename)
+				nn := atomic.AddUint32(&n, 1)
+
+				log.Printf("[STARTED] %d %q", nn, filename)
 
 				doc, err := parse(filename)
 				if err != nil {
@@ -56,7 +57,7 @@ func ElementsOf(elementName string, filenames <-chan string, workerLimit int, si
 					elements <- e
 				}
 
-				log.Printf("[FINISHED] %d %q", n, filename)
+				log.Printf("[FINISHED] %d %q", nn, filename)
 			}(filename)
 		}
 	}()

@@ -17,11 +17,11 @@ import (
 
 var cpuFile = flag.String("profile.cpu", "", "write cpu profile to `file`")
 var memFile = flag.String("profile.mem", "", "write memory profile to `file`")
-var workNum = flag.Int("w", 8, "worker pool size")
+var workNum = flag.Int("w", 5, "worker pool size")
 var pipeSize = flag.Int("p", 10000, "pipe size per one worker")
 var procNum = flag.Int("n", runtime.GOMAXPROCS(0), "set GOMAXPROCS = n")
-var procDiv = flag.Int("d", 2, "set GOMAXPROCS /= d")
-var cmd = flag.String("c", "x", "xml|json")
+var procDiv = flag.Int("d", 3, "set GOMAXPROCS /= d")
+var cmd = flag.String("c", "x", "x|j|g")
 
 func main() {
 	start := time.Now()
@@ -86,12 +86,12 @@ func printXMLStats(filenames <-chan string, workerNum int, pipeSize int) {
 func commands(s string, workerCount int, pipeSize int) {
 	filenames := sys.Filenames(flag.Args(), 500)
 	switch s {
-	case "x":
-		printXMLStats(filenames, workerCount, pipeSize)
-	case "j":
-		printJSON(filenames, workerCount, pipeSize)
 	case "g":
 		printGo(filenames, workerCount, pipeSize)
+	case "j":
+		printJSON(filenames, workerCount, pipeSize)
+	case "x":
+		printXMLStats(filenames, workerCount, pipeSize)
 	}
 }
 
