@@ -1,9 +1,3 @@
-// This example demonstrates indexing documents using the esutil.BulkIndexer helper.
-//
-// You can configure the settings with command line flags:
-//
-//     go run indexer.go --workers=8 --count=100000 --flush=1000000
-//
 package main
 
 import (
