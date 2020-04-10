@@ -12,6 +12,19 @@ type Info struct {
 	children map[string]*Info
 }
 
+func (i Info) GoString() string {
+	if len(i.children) > 0 {
+		var s strings.Builder
+		s.WriteString(fmt.Sprintf("Info{\ncounters: %#v,\nchildren: map[string]*Info{\n", i.counters))
+		for k, v := range i.children {
+			s.WriteString(fmt.Sprintf("%q:&%#v,\n", k, v))
+		}
+		s.WriteString("},\n}")
+		return s.String()
+	}
+	return fmt.Sprintf("Info{counters: %#v}", i.counters)
+}
+
 func NewInfo() *Info {
 	return &Info{
 		counters: make(map[string]int),

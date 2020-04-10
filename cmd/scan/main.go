@@ -62,6 +62,8 @@ func printJSON(filenames <-chan string, workerNum int, pipeSize int) {
 	info := dom.NewInfo()
 	for event := range sewik.ElementsOf("ZDARZENIE", filenames, workerNum, workerNum*(pipeSize+1)) {
 		info.Add(event)
+		fmt.Printf("package dom\n\nvar GeneratedInfo = &%#v\n", info)
+		os.Exit(0)
 	}
 	fmt.Println(info)
 }
