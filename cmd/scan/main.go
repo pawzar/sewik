@@ -67,7 +67,7 @@ func printJSON(filenames <-chan string, workerNum int, pipeSize int) {
 	fmt.Printf("package dom\n\nvar GeneratedInfo = &%#v\n", info)
 }
 
-func printVar(filenames <-chan string, workerNum int, pipeSize int) {
+func printGo(filenames <-chan string, workerNum int, pipeSize int) {
 	info := dom.NewInfo()
 	for event := range sewik.ElementsOf("ZDARZENIE", filenames, workerNum, workerNum*(pipeSize+1)) {
 		info.Add(event)
@@ -90,8 +90,8 @@ func commands(s string, workerCount int, pipeSize int) {
 		printXMLStats(filenames, workerCount, pipeSize)
 	case "j":
 		printJSON(filenames, workerCount, pipeSize)
-	case "v":
-		printVar(filenames, workerCount, pipeSize)
+	case "g":
+		printGo(filenames, workerCount, pipeSize)
 	}
 }
 
