@@ -8,7 +8,6 @@ import (
 
 	"github.com/subchen/go-xmldom"
 
-	"sewik/pkg/dom"
 	"sewik/pkg/es"
 	"sewik/pkg/sync"
 	"sewik/pkg/xml"
@@ -24,19 +23,9 @@ func ElasticDocs(n <-chan *xmldom.Node) <-chan *es.Doc {
 
 	return documents
 }
-func Counters(n <-chan *xmldom.Node) <-chan *dom.Counter {
-	counters := make(chan *dom.Counter, cap(n))
-
-	for nn := range n {
-		counters <- dom.NewCounter().WithNode(nn)
-	}
-	close(counters)
-
-	return counters
-}
 
 func ElementsOf(elementName string, filenames <-chan string, workerLimit int, size int) <-chan *xmldom.Node {
-	wg := sync.LimitingWaitGroup{Limit: workerLimit}
+	wg := sync.LimitingWaitGroup{Limit: workerLimit + 1}
 
 	elements := make(chan *xmldom.Node, size)
 	go func() {
@@ -47,6 +36,8 @@ func ElementsOf(elementName string, filenames <-chan string, workerLimit int, si
 	var n uint32
 
 	go func() {
+		wg.Add(1)
+		defer wg.Done()
 		for filename := range filenames {
 			wg.Add(1)
 			go func(filename string) {

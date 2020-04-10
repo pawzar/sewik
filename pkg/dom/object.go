@@ -1,78 +1,91 @@
 package dom
 
 import (
-	json2 "encoding/json"
+	"encoding/json"
 	"log"
 
 	"github.com/subchen/go-xmldom"
 )
 
 type Object struct {
-	Value  string
-	Fields fields
+	Text     string
+	Fields   map[string]string
+	Children map[string][]*Object
 }
 
 func (o *Object) MarshalJSON() ([]byte, error) {
-	return json2.Marshal(&o.Fields)
+	if o.Text != "" {
+		return json.Marshal(o.Text)
+	}
+	if len(o.Children) == 1 {
+		for _, v := range o.Children {
+			if len(v) == 1 {
+				for _, w := range v {
+					return json.Marshal(w)
+				}
+			}
+			return json.Marshal(v)
+		}
+	}
+	return json.Marshal(o.Children)
 }
-
-type fields map[string]*Object
 
 func NewObject() *Object {
 	return &Object{
-		Fields: make(fields),
+		Fields:   make(map[string]string),
+		Children: make(map[string][]*Object),
 	}
 }
-func (o *Object) From(n *xmldom.Node) *Object {
+
+func (o *Object) With(n *xmldom.Node) *Object {
 	o.Add(n)
 	return o
 }
+
+func (o *Object) WithText(s string) *Object {
+	o.addText(s)
+	return o
+}
+
 func (o *Object) Add(n *xmldom.Node) {
-	o.addNode(n.Children...)
-	o.addAttr(n.Attributes...)
 	o.addText(n.Text)
+	o.addAttr(n.Attributes...)
+	o.addNode(n.Children...)
 }
 
 func (o *Object) String() string {
-	bytes, err := json2.Marshal(o)
+	bytes, err := json.Marshal(o)
 	if err != nil {
 		log.Panic(err)
 	}
 	return string(bytes)
 }
 
-func (o *Object) add(s, v string) {
-	o.find(s).Value = v
-}
-
 func (o *Object) addText(t string) {
 	if t == "" {
 		return
 	}
-
-	if len(o.Fields) > 0 {
-		o.add("_", t)
-	}
-	o.Value = t
+	o.Text = t
 }
 
 func (o *Object) addAttr(a ...*xmldom.Attribute) {
 	for _, aa := range a {
-		o.add("_"+aa.Name, aa.Value)
+		o.Fields[aa.Name] = aa.Value
 	}
 }
 
 func (o *Object) addNode(n ...*xmldom.Node) {
 	for _, nn := range n {
-		o.find(nn.Name).Add(nn)
+		if nn.Text != "" {
+			o.Fields[nn.Name] = nn.Text
+		} else {
+			o.append(nn.Name, NewObject().With(nn))
+		}
 	}
 }
 
-func (o *Object) find(s string) *Object {
-	ff, ok := o.Fields[s]
-	if !ok {
-		ff = NewObject()
-		o.Fields[s] = ff
-	}
-	return ff
+func (o *Object) append(s string, oo *Object) {
+	ff, _ := o.Children[s]
+	objects := append(ff, oo)
+	o.Children[s] = objects
 }
