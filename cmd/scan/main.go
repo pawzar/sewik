@@ -11,8 +11,8 @@ import (
 
 	"sewik/pkg/dom"
 	"sewik/pkg/es"
-	"sewik/pkg/sewik"
 	"sewik/pkg/sys"
+	"sewik/pkg/xml"
 )
 
 var cpuFile = flag.String("profile.cpu", "", "write cpu profile to `file`")
@@ -59,14 +59,14 @@ func main() {
 }
 
 func printJSON(filenames <-chan string, workerNum int, pipeSize int) {
-	for event := range sewik.ElementsOf("ZDARZENIE", filenames, workerNum, workerNum*(pipeSize+1)) {
+	for event := range xml.ElementsOf("ZDARZENIE", filenames, workerNum, workerNum*(pipeSize+1)) {
 		fmt.Println(es.NewDoc(event).Body())
 	}
 }
 
 func printGoInfo(filenames <-chan string, workerNum int, pipeSize int) {
 	info := dom.NewInfo()
-	for event := range sewik.ElementsOf("ZDARZENIE", filenames, workerNum, workerNum*(pipeSize+1)) {
+	for event := range xml.ElementsOf("ZDARZENIE", filenames, workerNum, workerNum*(pipeSize+1)) {
 		info.Add(event)
 	}
 	fmt.Printf("package dom\n\nvar GeneratedInfo = &%#v\n", info)
@@ -74,7 +74,7 @@ func printGoInfo(filenames <-chan string, workerNum int, pipeSize int) {
 
 func printTextInfo(filenames <-chan string, workerNum int, pipeSize int) {
 	info := dom.NewInfo()
-	for event := range sewik.ElementsOf("ZDARZENIE", filenames, workerNum, workerNum*(pipeSize+1)) {
+	for event := range xml.ElementsOf("ZDARZENIE", filenames, workerNum, workerNum*(pipeSize+1)) {
 		info.Add(event)
 	}
 	fmt.Println(info.String())

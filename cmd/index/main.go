@@ -25,8 +25,8 @@ import (
 	"github.com/elastic/go-elasticsearch/v8/esutil"
 
 	"sewik/pkg/es"
-	"sewik/pkg/sewik"
 	"sewik/pkg/sys"
+	"sewik/pkg/xml"
 )
 
 var (
@@ -37,8 +37,21 @@ var (
 	filenames  []string
 )
 
+func init() {
+	flag.StringVar(&indexName, "index", "idx", "Index name")
+	flag.IntVar(&numWorkers, "workers", runtime.NumCPU()/2, "Number of indexer workers")
+	flag.IntVar(&flushBytes, "flush", 5e+6, "Flush threshold in bytes")
+	flag.IntVar(&numItems, "count", 10000, "Number of documents to generate")
+
+	flag.Parse()
+
+	filenames = flag.Args()
+
+	rand.Seed(time.Now().UnixNano())
+}
+
 func work(bi esutil.BulkIndexer, countSuccessful uint64) {
-	for v := range sewik.ElementsOf("ZDARZENIE", sys.Filenames(filenames, 100), numWorkers, (numItems+1)*numWorkers) {
+	for v := range xml.ElementsOf("ZDARZENIE", sys.Filenames(filenames, 100), numWorkers, (numItems+1)*numWorkers) {
 		b := es.NewDoc(v).Body()
 		err := bi.Add(
 			context.Background(),
@@ -181,17 +194,4 @@ func main() {
 			humanize.Comma(int64(1000.0/float64(dur/time.Millisecond)*float64(biStats.NumFlushed))),
 		)
 	}
-}
-
-func init() {
-	flag.StringVar(&indexName, "index", "idx", "Index name")
-	flag.IntVar(&numWorkers, "workers", runtime.NumCPU()/2, "Number of indexer workers")
-	flag.IntVar(&flushBytes, "flush", 5e+6, "Flush threshold in bytes")
-	flag.IntVar(&numItems, "count", 10000, "Number of documents to generate")
-
-	flag.Parse()
-
-	filenames = flag.Args()
-
-	rand.Seed(time.Now().UnixNano())
 }

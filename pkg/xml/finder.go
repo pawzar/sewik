@@ -1,4 +1,4 @@
-package sewik
+package xml
 
 import (
 	"fmt"
@@ -8,21 +8,8 @@ import (
 
 	"github.com/subchen/go-xmldom"
 
-	"sewik/pkg/es"
 	"sewik/pkg/sync"
-	"sewik/pkg/xml"
 )
-
-func ElasticDocs(n <-chan *xmldom.Node) <-chan *es.Doc {
-	documents := make(chan *es.Doc, cap(n))
-
-	for nn := range n {
-		documents <- es.NewDoc(nn)
-	}
-	close(documents)
-
-	return documents
-}
 
 func ElementsOf(elementName string, filenames <-chan string, workerLimit int, size int) <-chan *xmldom.Node {
 	wg := sync.LimitingWaitGroup{Limit: workerLimit + 1}
@@ -72,7 +59,7 @@ func parse(filename string) (*xmldom.Document, error) {
 	}
 	defer file.Close()
 
-	return xml.Parse(file)
+	return Parse(file)
 }
 
 func dive(s string, children []*xmldom.Node) []*xmldom.Node {
