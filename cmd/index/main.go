@@ -24,6 +24,7 @@ import (
 	"github.com/elastic/go-elasticsearch/v8/esapi"
 	"github.com/elastic/go-elasticsearch/v8/esutil"
 
+	"sewik/pkg/es"
 	"sewik/pkg/sewik"
 	"sewik/pkg/sys"
 )
@@ -37,30 +38,30 @@ var (
 )
 
 func work(bi esutil.BulkIndexer, countSuccessful uint64) {
-	for d := range sewik.ElasticDocs(sewik.ElementsOf("ZDARZENIE", sys.Filenames(filenames, 100), numWorkers, (numItems+1)*numWorkers)) {
-		b := d.String()
+	for v := range sewik.ElementsOf("ZDARZENIE", sys.Filenames(filenames, 100), numWorkers, (numItems+1)*numWorkers) {
+		b := es.NewDoc(v).Body()
 		err := bi.Add(
 			context.Background(),
 			esutil.BulkIndexerItem{
 				Action:     "index",
-				DocumentID: d.ID,
+				DocumentID: es.NewDoc(v).ID,
 				Body:       strings.NewReader(b),
 				OnSuccess: func(ctx context.Context, item esutil.BulkIndexerItem, res esutil.BulkIndexerResponseItem) {
 					atomic.AddUint64(&countSuccessful, 1)
 				},
 				OnFailure: func(ctx context.Context, item esutil.BulkIndexerItem, res esutil.BulkIndexerResponseItem, err error) {
 					if err != nil {
-						log.Printf("ERROR: [%s] %s %s", item.DocumentID, err, d.Source)
+						log.Printf("ERROR: [%s] %s %s", item.DocumentID, err, es.NewDoc(v).Source)
 						fmt.Printf(`{"err":"%s","itemId":"%s","doc":%s}`+"\n", err, item.DocumentID, b)
 					} else {
-						log.Printf("ERROR: [%s] %s: %s %s", item.DocumentID, res.Error.Type, res.Error.Reason, d.Source)
+						log.Printf("ERROR: [%s] %s: %s %s", item.DocumentID, res.Error.Type, res.Error.Reason, es.NewDoc(v).Source)
 						fmt.Printf(`{"err":"%s","reason":"%s","itemId":"%s","doc":%s}`+"\n", res.Error.Type, res.Error.Reason, item.DocumentID, b)
 					}
 				},
 			},
 		)
 		if err != nil {
-			log.Fatalf("Unexpected error: %s [%s] %s", err, d.ID, d.Source)
+			log.Fatalf("Unexpected error: %s [%s] %s", err, es.NewDoc(v).ID, es.NewDoc(v).Source)
 		}
 	}
 }

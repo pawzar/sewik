@@ -12,17 +12,24 @@ type Info struct {
 	children map[string]*Info
 }
 
-func (i Info) GoString() string {
-	if len(i.children) > 0 {
-		var s strings.Builder
-		s.WriteString(fmt.Sprintf("Info{\ncounters: %#v,\nchildren: map[string]*Info{\n", i.counters))
-		for k, v := range i.children {
-			s.WriteString(fmt.Sprintf("%q:&%#v,\n", k, v))
-		}
-		s.WriteString("},\n}")
-		return s.String()
+func (i *Info) Get(s string) *Info {
+	info, ok := i.children[s]
+	if !ok {
+		panic("key not found")
 	}
-	return fmt.Sprintf("Info{counters: %#v}", i.counters)
+	return info
+}
+func (i *Info) IsArray(s string) bool {
+	return i.counters[s] > 1
+}
+func (i *Info) IsObsolete() bool {
+	return len(i.counters) == 1 && i.firstCounter() == 1
+}
+func (i Info) firstCounter() int {
+	for _, c := range i.counters {
+		return c
+	}
+	panic("counters are empty")
 }
 
 func NewInfo() *Info {
@@ -30,12 +37,6 @@ func NewInfo() *Info {
 		counters: make(map[string]int),
 		children: make(map[string]*Info),
 	}
-}
-
-func newInfoFrom(n *xmldom.Node) *Info {
-	i := NewInfo()
-	i.count(n)
-	return i
 }
 
 func (i *Info) count(n *xmldom.Node) {
@@ -48,6 +49,19 @@ func (i *Info) count(n *xmldom.Node) {
 	for _, v := range n.Children {
 		i.counters[v.Name]++
 	}
+}
+
+func (i Info) GoString() string {
+	if len(i.children) > 0 {
+		var s strings.Builder
+		s.WriteString(fmt.Sprintf("Info{\ncounters: %#v,\nchildren: map[string]*Info{\n", i.counters))
+		for k, v := range i.children {
+			s.WriteString(fmt.Sprintf("%q:&%#v,\n", k, v))
+		}
+		s.WriteString("},\n}")
+		return s.String()
+	}
+	return fmt.Sprintf("Info{counters: %#v}", i.counters)
 }
 
 func (i *Info) String() string {
@@ -63,6 +77,12 @@ func (i *Info) string(p string) string {
 		}
 	}
 	return s.String()
+}
+
+func newInfoFrom(n *xmldom.Node) *Info {
+	i := NewInfo()
+	i.count(n)
+	return i
 }
 
 func (i *Info) Add(n *xmldom.Node) {

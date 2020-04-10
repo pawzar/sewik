@@ -34,6 +34,6 @@ func init() {
 
 func main() {
 	for d := range sewik.ElasticDocs(sewik.ElementsOf("ZDARZENIE", sys.Filenames(filenames, 100), numWorkers, (numItems+1)*numWorkers)) {
-		fmt.Println(d.String())
+		fmt.Println(d.Body())
 	}
 }

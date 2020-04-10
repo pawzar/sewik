@@ -6,30 +6,30 @@ import (
 
 	"github.com/subchen/go-xmldom"
 
-	"sewik/pkg/json"
-	"sewik/pkg/xml/nodes"
+	"sewik/pkg/dom"
+	"sewik/pkg/dom/mapping"
 )
-
-type Doc struct {
-	ID     string
-	Source string
-	m      json.Map
-}
-
-func (d Doc) String() string {
-	bytes, err := json2.Marshal(d.m)
-	if err != nil {
-		log.Panic(err)
-	}
-	return string(bytes)
-}
 
 func NewDoc(node *xmldom.Node) *Doc {
 	return &Doc{
 		ID:     findID(node),
 		Source: findSrc(node),
-		m:      nodes.NewInnerMap(node),
+		m:      mapping.NewMapping(dom.GeneratedInfo, node),
 	}
+}
+
+type Doc struct {
+	ID     string
+	Source string
+	m      *mapping.Mapping
+}
+
+func (d Doc) Body() string {
+	bytes, err := json2.Marshal(d.m.Map())
+	if err != nil {
+		log.Panic(err)
+	}
+	return string(bytes)
 }
 
 func findSrc(node *xmldom.Node) string {

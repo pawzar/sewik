@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"sewik/pkg/dom"
-	"sewik/pkg/dom/stats"
+	"sewik/pkg/es"
 	"sewik/pkg/sewik"
 	"sewik/pkg/sys"
 )
@@ -21,7 +21,7 @@ var workNum = flag.Int("w", 5, "worker pool size")
 var pipeSize = flag.Int("p", 10000, "pipe size per one worker")
 var procNum = flag.Int("n", runtime.GOMAXPROCS(0), "set GOMAXPROCS = n")
 var procDiv = flag.Int("d", 3, "set GOMAXPROCS /= d")
-var cmd = flag.String("c", "x", "x|j|g")
+var cmd = flag.String("c", "x", "go|info|json")
 
 func main() {
 	start := time.Now()
@@ -59,7 +59,12 @@ func main() {
 }
 
 func printJSON(filenames <-chan string, workerNum int, pipeSize int) {
-	os.Exit(100)
+	for event := range sewik.ElementsOf("ZDARZENIE", filenames, workerNum, workerNum*(pipeSize+1)) {
+		fmt.Println(es.NewDoc(event).Body())
+	}
+}
+
+func printGoInfo(filenames <-chan string, workerNum int, pipeSize int) {
 	info := dom.NewInfo()
 	for event := range sewik.ElementsOf("ZDARZENIE", filenames, workerNum, workerNum*(pipeSize+1)) {
 		info.Add(event)
@@ -67,31 +72,23 @@ func printJSON(filenames <-chan string, workerNum int, pipeSize int) {
 	fmt.Printf("package dom\n\nvar GeneratedInfo = &%#v\n", info)
 }
 
-func printGo(filenames <-chan string, workerNum int, pipeSize int) {
+func printTextInfo(filenames <-chan string, workerNum int, pipeSize int) {
 	info := dom.NewInfo()
 	for event := range sewik.ElementsOf("ZDARZENIE", filenames, workerNum, workerNum*(pipeSize+1)) {
 		info.Add(event)
 	}
-	fmt.Printf("package dom\n\nvar GeneratedInfo = &%#v\n", info)
-}
-
-func printXMLStats(filenames <-chan string, workerNum int, pipeSize int) {
-	elements := stats.NewElementsWithLock()
-	for e := range sewik.ElementsOf("ZDARZENIE", filenames, workerNum, workerNum*(pipeSize+1)) {
-		elements.Add(e)
-	}
-	stats.PrintXML(elements)
+	fmt.Println(info.String())
 }
 
 func commands(s string, workerCount int, pipeSize int) {
 	filenames := sys.Filenames(flag.Args(), 500)
 	switch s {
-	case "g":
-		printGo(filenames, workerCount, pipeSize)
-	case "j":
+	case "go":
+		printGoInfo(filenames, workerCount, pipeSize)
+	case "info":
+		printTextInfo(filenames, workerCount, pipeSize)
+	case "json":
 		printJSON(filenames, workerCount, pipeSize)
-	case "x":
-		printXMLStats(filenames, workerCount, pipeSize)
 	}
 }
 
