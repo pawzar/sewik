@@ -30,17 +30,20 @@ func (i *Mapping) Map() interface{} {
 	a := make(map[string][]interface{})
 
 	for _, v := range i.n.Children {
-		if i.i.IsArray(v.Name) {
-			a[v.Name] = append(a[v.Name], NewMapping(i.i.Get(v.Name), v).Map())
+		name := v.Name
+		if i.i.IsArray(name) {
+			a[name] = append(a[name], NewMapping(i.i.Get(name), v).Map())
 		} else {
-			m[v.Name] = NewMapping(i.i.Get(v.Name), v).Map()
+			m[name] = NewMapping(i.i.Get(name), v).Map()
 		}
 	}
+
 	for _, v := range i.n.Attributes {
-		if i.i.IsArray(v.Name) {
-			a[v.Name] = append(a[v.Name], v.Value)
+		name := "_" + v.Name
+		if i.i.IsArray(name) {
+			a[name] = append(a[name], v.Value)
 		} else {
-			m[v.Name] = v.Value
+			m[name] = v.Value
 		}
 	}
 
