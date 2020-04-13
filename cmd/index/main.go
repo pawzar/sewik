@@ -18,9 +18,9 @@ import (
 	"github.com/elastic/go-elasticsearch/v8/esapi"
 	"github.com/elastic/go-elasticsearch/v8/esutil"
 
-	"sewik/pkg/es"
-	"sewik/pkg/sys"
-	"sewik/pkg/xml"
+	"sewik/internal/es"
+	"sewik/internal/sys"
+	"sewik/internal/xml"
 )
 
 var (

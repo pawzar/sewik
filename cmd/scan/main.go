@@ -9,10 +9,10 @@ import (
 	"runtime/pprof"
 	"time"
 
-	"sewik/pkg/dom"
-	"sewik/pkg/es"
-	"sewik/pkg/sys"
-	"sewik/pkg/xml"
+	"sewik/internal/dom"
+	"sewik/internal/es"
+	"sewik/internal/sys"
+	"sewik/internal/xml"
 )
 
 var cpuFile = flag.String("profile.cpu", "", "write cpu profile to `file`")

@@ -8,7 +8,7 @@ import (
 
 	"github.com/subchen/go-xmldom"
 
-	"sewik/pkg/sync"
+	"sewik/internal/sync"
 )
 
 func ElementsOf(elementName string, filenames <-chan string, workerLimit int, size int) <-chan *xmldom.Node {

@@ -6,8 +6,8 @@ import (
 
 	"github.com/subchen/go-xmldom"
 
-	"sewik/pkg/dom"
-	"sewik/pkg/dom/mapping"
+	"sewik/internal/dom"
+	"sewik/internal/dom/mapping"
 )
 
 func NewDoc(node *xmldom.Node) *Doc {

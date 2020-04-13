@@ -3,7 +3,7 @@ package mapping
 import (
 	"github.com/subchen/go-xmldom"
 
-	"sewik/pkg/dom"
+	"sewik/internal/dom"
 )
 
 type Mapping struct {
