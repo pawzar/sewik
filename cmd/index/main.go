@@ -36,11 +36,8 @@ func init() {
 	flag.IntVar(&numWorkers, "workers", runtime.NumCPU()/2, "Number of indexer workers")
 	flag.IntVar(&flushBytes, "flush", 5e+6, "Flush threshold in bytes")
 	flag.IntVar(&numItems, "count", 10000, "Number of documents to generate")
-
 	flag.Parse()
-
 	filenames = flag.Args()
-
 	rand.Seed(time.Now().UnixNano())
 }
 

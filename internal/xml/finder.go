@@ -12,7 +12,7 @@ import (
 )
 
 func ElementsOf(elementName string, filenames <-chan string, workerLimit int, size int) <-chan *xmldom.Node {
-	wg := sync.LimitingWaitGroup{Limit: workerLimit + 1}
+	wg := sync.SemaphoredWaitGroup{Size: workerLimit + 1}
 
 	elements := make(chan *xmldom.Node, size)
 	go func() {

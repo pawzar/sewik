@@ -9,8 +9,9 @@ type WaitGroup interface {
 	Done()
 	Wait()
 }
-type LimitingWaitGroup struct {
-	Limit           int
+
+type SemaphoredWaitGroup struct {
+	Size            int
 	ch              chan bool
 	wg              sync.WaitGroup
 	onlyOneTime     sync.Once
@@ -18,12 +19,12 @@ type LimitingWaitGroup struct {
 	onlyOneTimeDone sync.Once
 }
 
-func (x *LimitingWaitGroup) Add(delta int) {
+func (x *SemaphoredWaitGroup) Add(delta int) {
 	x.onlyOneTime.Do(func() {
-		if x.Limit == 0 {
-			x.Limit = 1
+		if x.Size == 0 {
+			x.Size = 1
 		}
-		x.ch = make(chan bool, x.Limit)
+		x.ch = make(chan bool, x.Size)
 	})
 
 	x.ch <- true
@@ -36,7 +37,7 @@ func (x *LimitingWaitGroup) Add(delta int) {
 		x.wg.Done()
 	})
 }
-func (x *LimitingWaitGroup) Done() {
+func (x *SemaphoredWaitGroup) Done() {
 	<-x.ch
 	x.wg.Done()
 
@@ -44,11 +45,11 @@ func (x *LimitingWaitGroup) Done() {
 		x.wg.Done()
 	})
 }
-func (x *LimitingWaitGroup) Wait() {
+func (x *SemaphoredWaitGroup) Wait() {
 	x.onlyOneTimeAdd.Do(func() {
 		x.wg.Add(1)
 	})
 
 	x.wg.Wait()
-	close(x.ch) //disables ruse
+	close(x.ch) // disables ruse
 }
