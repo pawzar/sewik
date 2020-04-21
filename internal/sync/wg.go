@@ -11,45 +11,45 @@ type WaitGroup interface {
 }
 
 type SemaphoredWaitGroup struct {
-	Size            int
-	ch              chan bool
-	wg              sync.WaitGroup
-	onlyOneTime     sync.Once
-	onlyOneTimeAdd  sync.Once
-	onlyOneTimeDone sync.Once
+	Size     int
+	ch       chan bool
+	wg       sync.WaitGroup
+	initOnce sync.Once
+	addOnce  sync.Once
+	doneOnce sync.Once
 }
 
-func (x *SemaphoredWaitGroup) Add(delta int) {
-	x.onlyOneTime.Do(func() {
-		if x.Size == 0 {
-			x.Size = 1
+func (s *SemaphoredWaitGroup) Add(delta int) {
+	s.initOnce.Do(func() {
+		if s.Size == 0 {
+			s.Size = 1
 		}
-		x.ch = make(chan bool, x.Size)
+		s.ch = make(chan bool, s.Size)
 	})
 
-	x.ch <- true
-	x.wg.Add(delta)
+	s.ch <- true
+	s.wg.Add(delta)
 
-	x.onlyOneTimeAdd.Do(func() {
-		x.wg.Add(1)
+	s.addOnce.Do(func() {
+		s.wg.Add(1)
 	})
-	x.onlyOneTimeDone.Do(func() {
-		x.wg.Done()
+	s.doneOnce.Do(func() {
+		s.wg.Done()
 	})
 }
-func (x *SemaphoredWaitGroup) Done() {
-	<-x.ch
-	x.wg.Done()
+func (s *SemaphoredWaitGroup) Done() {
+	<-s.ch
+	s.wg.Done()
 
-	x.onlyOneTimeDone.Do(func() {
-		x.wg.Done()
+	s.doneOnce.Do(func() {
+		s.wg.Done()
 	})
 }
-func (x *SemaphoredWaitGroup) Wait() {
-	x.onlyOneTimeAdd.Do(func() {
-		x.wg.Add(1)
+func (s *SemaphoredWaitGroup) Wait() {
+	s.addOnce.Do(func() {
+		s.wg.Add(1)
 	})
 
-	x.wg.Wait()
-	close(x.ch) // disables ruse
+	s.wg.Wait()
+	close(s.ch) // disables ruse
 }
