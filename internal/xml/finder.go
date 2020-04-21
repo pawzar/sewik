@@ -14,17 +14,12 @@ import (
 func ElementsOf(elementName string, filenames <-chan string, workerLimit int, size int) <-chan *xmldom.Node {
 	wg := sync.SemaphoredWaitGroup{Size: workerLimit + 1}
 
-	elements := make(chan *xmldom.Node, size)
-	go func() {
-		wg.Wait()
-		close(elements)
-	}()
-
-	var n uint32
+	elements := prepareChannel(size, &wg)
 
 	go func() {
 		wg.Add(1)
 		defer wg.Done()
+		var n uint32
 		for filename := range filenames {
 			wg.Add(1)
 			go func(filename string) {
@@ -49,6 +44,15 @@ func ElementsOf(elementName string, filenames <-chan string, workerLimit int, si
 		}
 	}()
 
+	return elements
+}
+
+func prepareChannel(size int, wg sync.WaitGroup) chan *xmldom.Node {
+	elements := make(chan *xmldom.Node, size)
+	go func() {
+		wg.Wait()
+		close(elements)
+	}()
 	return elements
 }
 
