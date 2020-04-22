@@ -5,21 +5,21 @@ import (
 	"path/filepath"
 )
 
-func Filenames(p []string, size int) <-chan string {
-	jobs := make(chan string, size)
+func Filenames(patterns []string, size int) <-chan string {
+	ch := make(chan string, size)
 
 	go func() {
-		defer close(jobs)
-		log.Printf("[START] Filenames: %q", p)
+		defer close(ch)
+		log.Printf("[START] Filenames: %q", patterns)
 		defer log.Printf("[DONE] Filenames.")
 
-		for _, pattern := range p {
+		for _, pattern := range patterns {
 			filenames, _ := filepath.Glob(pattern)
 			for _, filename := range filenames {
-				jobs <- filename
+				ch <- filename
 			}
 		}
 	}()
 
-	return jobs
+	return ch
 }
